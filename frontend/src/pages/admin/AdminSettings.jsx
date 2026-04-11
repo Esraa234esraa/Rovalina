@@ -1,0 +1,412 @@
+import { useMemo, useState } from 'react';
+import { Save, RotateCcw } from 'lucide-react';
+import { useAdminSettingsQuery, useAdminUpdateSettingsMutation } from '../../hooks/admin/useAdminSettings';
+import LoadingState from '../../components/ui/LoadingState';
+import { useToast } from '../../hooks/useToast';
+import { getApiErrorMessage } from '../../utils/apiMessage';
+
+const DEFAULT_SETTINGS = {
+  storeName: 'Rovalina Lenses',
+  storeEmail: 'info@rovalinaloneses.com',
+  storePhone: '+20 100 123 4567',
+  storeAddress: 'القاهرة، مصر',
+  city: 'القاهرة',
+  governorate: 'القاهرة',
+  postalCode: '12345',
+  shippingFee: 50,
+  freeShippingMinimum: 500,
+  deliveryDays: 3,
+  enableShipping: true,
+  enableCOD: true,
+  enableInstapay: true,
+  enableWallet: false,
+  metaTitle: 'Rovalina Lenses - عدسات لاصقة أصلية',
+  metaDescription: 'متجر متخصص في بيع العدسات اللاصقة الأصلية بأفضل الأسعار',
+  facebook: 'https://facebook.com/rovalina',
+  instagram: 'https://instagram.com/rovalina',
+  tiktok: 'https://tiktok.com/@rovalina',
+  whatsapp: '+20 100 123 4567',
+  enableEmailNotifications: true,
+  notifyOnNewOrder: true,
+  notifyOnNewReview: true,
+  taxRate: 14,
+  enableTax: true,
+  supportEmail: 'support@rovalinaloneses.com',
+  supportPhone: '+20 100 234 5678',
+  aboutUs: 'نحن متجر متخصص في العدسات الأصلية مع خدمة عملاء سريعة وتوصيل آمن.',
+};
+
+const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+export default function AdminSettings() {
+  const toast = useToast();
+  const { data: remoteSettings, isLoading } = useAdminSettingsQuery();
+  const updateSettingsMutation = useAdminUpdateSettingsMutation();
+  const [draft, setDraft] = useState({});
+
+  const baseSettings = useMemo(
+    () => ({
+      ...DEFAULT_SETTINGS,
+      ...(remoteSettings || {}),
+    }),
+    [remoteSettings]
+  );
+
+  const settings = useMemo(
+    () => ({
+      ...baseSettings,
+      ...draft,
+    }),
+    [baseSettings, draft]
+  );
+
+  const hasChanges = useMemo(() => Object.keys(draft).length > 0, [draft]);
+
+  const isSaving = updateSettingsMutation.isPending;
+
+  const summary = useMemo(
+    () => ({
+      email: settings.storeEmail || '-',
+      phone: settings.storePhone || '-',
+      shippingFee: Number(settings.shippingFee || 0),
+      taxRate: Number(settings.taxRate || 0),
+      aboutPreview: String(settings.aboutUs || '').trim().slice(0, 120),
+    }),
+    [settings]
+  );
+
+  const handleSettingChange = (key, value) => {
+    setDraft((current) => ({
+      ...current,
+      [key]: value,
+    }));
+  };
+
+  const validateSettings = () => {
+    const storeName = String(settings.storeName || '').trim();
+    const storeEmail = String(settings.storeEmail || '').trim();
+    const shippingFee = Number(settings.shippingFee);
+    const freeShippingMinimum = Number(settings.freeShippingMinimum);
+    const deliveryDays = Number.parseInt(String(settings.deliveryDays), 10);
+    const taxRate = Number(settings.taxRate);
+
+    if (!storeName) {
+      toast.error('اسم المتجر مطلوب.');
+      return false;
+    }
+
+    if (!storeEmail || !emailRegex.test(storeEmail)) {
+      toast.error('البريد الإلكتروني غير صحيح.');
+      return false;
+    }
+
+    if (!Number.isFinite(shippingFee) || shippingFee < 0) {
+      toast.error('رسوم الشحن يجب أن تكون رقمًا موجبًا أو صفر.');
+      return false;
+    }
+
+    if (!Number.isFinite(freeShippingMinimum) || freeShippingMinimum < 0) {
+      toast.error('حد الشحن المجاني يجب أن يكون رقمًا موجبًا أو صفر.');
+      return false;
+    }
+
+    if (!Number.isFinite(deliveryDays) || deliveryDays <= 0) {
+      toast.error('عدد أيام التسليم يجب أن يكون رقمًا أكبر من صفر.');
+      return false;
+    }
+
+    if (settings.enableTax && (!Number.isFinite(taxRate) || taxRate < 0 || taxRate > 100)) {
+      toast.error('معدل الضريبة يجب أن يكون بين 0 و 100.');
+      return false;
+    }
+
+    return true;
+  };
+
+  const handleSave = async () => {
+    if (!hasChanges || isSaving) return;
+    if (!validateSettings()) return;
+
+    const payload = {
+      ...settings,
+      storeName: String(settings.storeName || '').trim(),
+      storeEmail: String(settings.storeEmail || '').trim(),
+      shippingFee: Number(settings.shippingFee || 0),
+      freeShippingMinimum: Number(settings.freeShippingMinimum || 0),
+      deliveryDays: Number.parseInt(String(settings.deliveryDays || 1), 10),
+      taxRate: Number(settings.taxRate || 0),
+      aboutUs: String(settings.aboutUs || '').trim(),
+    };
+
+    try {
+      await updateSettingsMutation.mutateAsync(payload);
+      toast.success('تم حفظ الإعدادات بنجاح.');
+      setDraft({});
+    } catch (error) {
+      toast.error(getApiErrorMessage(error, 'تعذر حفظ الإعدادات.'));
+    }
+  };
+
+  const handleReset = () => {
+    if (isSaving) return;
+    setDraft({});
+  };
+
+  return (
+    <div className="min-h-screen bg-gray-50 dark:bg-dark-bg">
+      <div className="bg-white dark:bg-dark-card border-b border-gray-200 dark:border-gray-700">
+        <div className="container-fluid py-8">
+          <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-2">إعدادات المتجر</h1>
+          <p className="text-gray-600 dark:text-gray-400">إدارة الإعدادات العامة وصفحة من نحن وطرق الشحن والدفع</p>
+        </div>
+      </div>
+
+      <div className="container-fluid py-8">
+        {isLoading ? (
+          <div className="bg-white dark:bg-dark-card rounded-lg border border-gray-200 dark:border-gray-700">
+            <LoadingState text="جاري تحميل إعدادات المتجر..." className="py-6" />
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div className="lg:col-span-2 space-y-6">
+              <div className="bg-white dark:bg-dark-card rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+                <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
+                  <h2 className="text-xl font-bold text-gray-900 dark:text-white">معلومات المتجر</h2>
+                </div>
+                <div className="p-6 space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">اسم المتجر</label>
+                    <input
+                      type="text"
+                      value={settings.storeName}
+                      onChange={(e) => handleSettingChange('storeName', e.target.value)}
+                      className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    />
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">البريد الإلكتروني</label>
+                      <input
+                        type="email"
+                        value={settings.storeEmail}
+                        onChange={(e) => handleSettingChange('storeEmail', e.target.value)}
+                        className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">الهاتف</label>
+                      <input
+                        type="tel"
+                        value={settings.storePhone}
+                        onChange={(e) => handleSettingChange('storePhone', e.target.value)}
+                        className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">العنوان</label>
+                    <input
+                      type="text"
+                      value={settings.storeAddress}
+                      onChange={(e) => handleSettingChange('storeAddress', e.target.value)}
+                      className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-white dark:bg-dark-card rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+                <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
+                  <h2 className="text-xl font-bold text-gray-900 dark:text-white">الشحن والضرائب</h2>
+                </div>
+                <div className="p-6 space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">رسوم الشحن</label>
+                      <input
+                        type="number"
+                        value={settings.shippingFee}
+                        onChange={(e) => handleSettingChange('shippingFee', e.target.value)}
+                        className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">حد الشحن المجاني</label>
+                      <input
+                        type="number"
+                        value={settings.freeShippingMinimum}
+                        onChange={(e) => handleSettingChange('freeShippingMinimum', e.target.value)}
+                        className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">أيام التسليم</label>
+                      <input
+                        type="number"
+                        value={settings.deliveryDays}
+                        onChange={(e) => handleSettingChange('deliveryDays', e.target.value)}
+                        className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <label className="flex items-center gap-3">
+                      <input
+                        type="checkbox"
+                        checked={Boolean(settings.enableShipping)}
+                        onChange={(e) => handleSettingChange('enableShipping', e.target.checked)}
+                        className="w-4 h-4 text-primary-600 rounded border-gray-300"
+                      />
+                      <span className="text-gray-700 dark:text-gray-300">تفعيل الشحن</span>
+                    </label>
+                    <label className="flex items-center gap-3">
+                      <input
+                        type="checkbox"
+                        checked={Boolean(settings.enableTax)}
+                        onChange={(e) => handleSettingChange('enableTax', e.target.checked)}
+                        className="w-4 h-4 text-primary-600 rounded border-gray-300"
+                      />
+                      <span className="text-gray-700 dark:text-gray-300">تفعيل الضريبة</span>
+                    </label>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">معدل الضريبة (%)</label>
+                    <input
+                      type="number"
+                      value={settings.taxRate}
+                      onChange={(e) => handleSettingChange('taxRate', e.target.value)}
+                      disabled={!settings.enableTax}
+                      className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 disabled:opacity-50"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-white dark:bg-dark-card rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+                <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
+                  <h2 className="text-xl font-bold text-gray-900 dark:text-white">صفحة من نحن (About Us)</h2>
+                </div>
+                <div className="p-6">
+                  <textarea
+                    rows="6"
+                    value={settings.aboutUs}
+                    onChange={(e) => handleSettingChange('aboutUs', e.target.value)}
+                    className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 leading-7"
+                    placeholder="اكتبي وصف المتجر ورسالة العلامة التجارية..."
+                  />
+                  <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">هذا النص يظهر في صفحة /about للمستخدمين.</p>
+                </div>
+              </div>
+
+              <div className="bg-white dark:bg-dark-card rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+                <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
+                  <h2 className="text-xl font-bold text-gray-900 dark:text-white">روابط التواصل الاجتماعي</h2>
+                </div>
+                <div className="p-6 space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">رابط Facebook</label>
+                      <input
+                        type="url"
+                        value={settings.facebook || ''}
+                        onChange={(e) => handleSettingChange('facebook', e.target.value)}
+                        placeholder="https://facebook.com/your-page"
+                        className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">رابط Instagram</label>
+                      <input
+                        type="url"
+                        value={settings.instagram || ''}
+                        onChange={(e) => handleSettingChange('instagram', e.target.value)}
+                        placeholder="https://instagram.com/your-page"
+                        className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">رابط TikTok</label>
+                      <input
+                        type="url"
+                        value={settings.tiktok || ''}
+                        onChange={(e) => handleSettingChange('tiktok', e.target.value)}
+                        placeholder="https://tiktok.com/@your-page"
+                        className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">رقم/رابط WhatsApp</label>
+                      <input
+                        type="text"
+                        value={settings.whatsapp || ''}
+                        onChange={(e) => handleSettingChange('whatsapp', e.target.value)}
+                        placeholder="+20 100 123 4567 أو https://wa.me/..."
+                        className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="lg:col-span-1 space-y-6">
+              <div className="bg-white dark:bg-dark-card rounded-lg border border-gray-200 dark:border-gray-700 p-6">
+                <div className="space-y-3">
+                  <button
+                    type="button"
+                    onClick={handleSave}
+                    disabled={!hasChanges || isSaving || isLoading}
+                    className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-primary-600 hover:bg-primary-700 disabled:bg-gray-300 dark:disabled:bg-gray-700 text-white rounded-lg transition font-medium"
+                  >
+                    <Save className="w-5 h-5" />
+                    {isSaving ? 'جارٍ الحفظ...' : 'حفظ التغييرات'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleReset}
+                    disabled={isSaving || isLoading}
+                    className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg transition font-medium"
+                  >
+                    <RotateCcw className="w-5 h-5" />
+                    إعادة تعيين
+                  </button>
+                </div>
+              </div>
+
+              <div className="bg-white dark:bg-dark-card rounded-lg border border-gray-200 dark:border-gray-700 p-6">
+                <h3 className="font-semibold text-gray-900 dark:text-white mb-4">ملخص سريع</h3>
+                <div className="space-y-3 text-sm">
+                  <div>
+                    <p className="text-gray-600 dark:text-gray-400">البريد الإلكتروني</p>
+                    <p className="text-gray-900 dark:text-white break-all">{summary.email}</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-600 dark:text-gray-400">الهاتف</p>
+                    <p className="text-gray-900 dark:text-white">{summary.phone}</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-600 dark:text-gray-400">رسوم الشحن</p>
+                    <p className="text-gray-900 dark:text-white">{summary.shippingFee} ج.م</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-600 dark:text-gray-400">نسبة الضريبة</p>
+                    <p className="text-gray-900 dark:text-white">{summary.taxRate}%</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-600 dark:text-gray-400">معاينة About Us</p>
+                    <p className="text-gray-900 dark:text-white leading-6">{summary.aboutPreview || '-'}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
