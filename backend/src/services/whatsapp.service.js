@@ -48,6 +48,51 @@ const getWhatsappAddress = (value) => {
   return phone.startsWith('whatsapp:') ? phone : `whatsapp:${phone}`;
 };
 
+const getTwilioClientFromEnv = () => {
+  const accountSid = String(process.env.TWILIO_ACCOUNT_SID || '').trim();
+  const authToken = String(process.env.TWILIO_AUTH_TOKEN || '').trim();
+
+  if (!accountSid || !authToken) {
+    throw new ApiError(500, 'Twilio credentials are missing.');
+  }
+
+  return twilio(accountSid, authToken);
+};
+
+export const sendWhatsAppMessage = async (message) => {
+  try {
+    const provider = String(process.env.WHATSAPP_PROVIDER || '').trim().toLowerCase();
+    if (provider && provider !== 'twilio') {
+      return { success: false, message: 'Unsupported WhatsApp provider.' };
+    }
+
+    const fromNumber = getWhatsappAddress(process.env.TWILIO_WHATSAPP_FROM);
+    const toNumber = getWhatsappAddress(process.env.WHATSAPP_TO);
+
+    if (!fromNumber || !toNumber) {
+      return { success: false, message: 'WhatsApp sender or recipient is missing.' };
+    }
+
+    const client = getTwilioClientFromEnv();
+    const result = await client.messages.create({
+      from: fromNumber,
+      to: toNumber,
+      body: String(message || '').trim(),
+    });
+
+    return {
+      success: true,
+      message: 'WhatsApp message sent successfully.',
+      data: result,
+    };
+  } catch (error) {
+    return {
+      success: false,
+      message: error?.message || 'Failed to send WhatsApp message.',
+    };
+  }
+};
+
 export const sendOrderNotification = async (order) => {
   const fromNumber = getWhatsappAddress(env.twilioWhatsappNumber);
   const toNumber = getWhatsappAddress(env.adminWhatsappNumber);
