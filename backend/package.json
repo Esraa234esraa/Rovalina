@@ -7,7 +7,7 @@
     "build": "npm run prisma:generate && npm run typecheck",
     "dev": "tsx watch src/server.ts",
     "start": "node --import tsx src/server.ts",
-    "start:railway": "npm run prisma:push ; npm start",
+    "start:railway": "npm run prisma:push && npm start",
     "typecheck": "tsc --noEmit",
     "prisma:generate": "prisma generate --schema=./prisma/schema.prisma",
     "prisma:migrate": "prisma migrate dev --schema=./prisma/schema.prisma",
