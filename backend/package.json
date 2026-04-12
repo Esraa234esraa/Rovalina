@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "build": "npm run prisma:generate && npm run typecheck",
+    "create:admin": "node ./scripts/create-admin.mjs",
     "dev": "tsx watch src/server.ts",
     "start": "node --import tsx src/server.ts",
     "start:railway": "npm run prisma:generate && npm start",
