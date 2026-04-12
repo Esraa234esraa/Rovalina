@@ -4,6 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "build": "npm run prisma:generate && npm run typecheck",
     "dev": "tsx watch src/server.ts",
     "start": "node --import tsx src/server.ts",
     "start:railway": "node ./scripts/prepare-railway-db.mjs ; npm run prisma:deploy ; npm start",
