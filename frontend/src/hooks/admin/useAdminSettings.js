@@ -10,7 +10,21 @@ export const useAdminSettingsQuery = () =>
     queryKey: adminSettingsKeys.all,
     queryFn: async () => {
       const response = await adminApi.getSettings();
-      return response.data.data;
+      const settings = response.data.data || {};
+      const shippingRates = Array.isArray(settings.shippingRates)
+        ? settings.shippingRates
+            .map((rate) => ({
+              governorate: String(rate?.governorate || rate?.name || '').trim(),
+              city: String(rate?.city || rate?.center || rate?.district || '').trim(),
+              fee: Number(rate?.fee ?? rate?.shippingFee ?? rate?.price ?? 0),
+            }))
+            .filter((rate) => rate.governorate && rate.city)
+        : [];
+
+      return {
+        ...settings,
+        shippingRates,
+      };
     },
   });
 
@@ -21,6 +35,9 @@ export const useAdminUpdateSettingsMutation = () => {
       const response = await adminApi.updateSettings(payload);
       return response.data.data;
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: adminSettingsKeys.all }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: adminSettingsKeys.all });
+      queryClient.invalidateQueries({ queryKey: ['store-settings'] });
+    },
   });
 };

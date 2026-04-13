@@ -239,6 +239,7 @@ model Order {
   transactionId     String?
   paymobOrderId     String?
   paymentResponse   Json?
+  paymentProofImage String?
   subtotal          Decimal
   shippingFee       Decimal
   taxAmount         Decimal @default(0)
@@ -396,12 +397,16 @@ model StoreSettings {
   shippingFee              Decimal @default(0)
   freeShippingMinimum      Decimal @default(0)
   deliveryDays             Int      @default(3)
+  shippingRates            Json?
   enableShipping           Boolean  @default(true)
   enableCOD                Boolean  @default(true)
   enableInstapay           Boolean  @default(true)
   enableWallet             Boolean  @default(false)
+  enablePaymob             Boolean  @default(false)
   enableTax                Boolean  @default(true)
   taxRate                  Decimal @default(0)
+  walletNumber             String?
+  instapayNumber           String?
   metaTitle                String?
   metaDescription          String?
   facebook                 String?

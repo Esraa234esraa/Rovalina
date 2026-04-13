@@ -16,10 +16,14 @@ const DEFAULT_SETTINGS = {
   shippingFee: 50,
   freeShippingMinimum: 500,
   deliveryDays: 3,
+  shippingRates: [],
   enableShipping: true,
   enableCOD: true,
   enableInstapay: true,
   enableWallet: false,
+  enablePaymob: false,
+  walletNumber: '',
+  instapayNumber: '',
   metaTitle: 'Rovalina Lenses - عدسات لاصقة أصلية',
   metaDescription: 'متجر متخصص في بيع العدسات اللاصقة الأصلية بأفضل الأسعار',
   facebook: 'https://facebook.com/rovalina',
@@ -82,6 +86,39 @@ export default function AdminSettings() {
     }));
   };
 
+  const handleShippingRateChange = (index, key, value) => {
+    const currentRates = Array.isArray(settings.shippingRates) ? settings.shippingRates : [];
+    const nextRates = currentRates.map((rate, rateIndex) =>
+      rateIndex === index
+        ? {
+            ...rate,
+            [key]: key === 'fee' ? value : value,
+          }
+        : rate
+    );
+
+    setDraft((current) => ({
+      ...current,
+      shippingRates: nextRates,
+    }));
+  };
+
+  const addShippingRate = () => {
+    const currentRates = Array.isArray(settings.shippingRates) ? settings.shippingRates : [];
+    setDraft((current) => ({
+      ...current,
+      shippingRates: [...currentRates, { governorate: '', city: '', fee: 0 }],
+    }));
+  };
+
+  const removeShippingRate = (index) => {
+    const currentRates = Array.isArray(settings.shippingRates) ? settings.shippingRates : [];
+    setDraft((current) => ({
+      ...current,
+      shippingRates: currentRates.filter((_, rateIndex) => rateIndex !== index),
+    }));
+  };
+
   const validateSettings = () => {
     const storeName = String(settings.storeName || '').trim();
     const storeEmail = String(settings.storeEmail || '').trim();
@@ -120,6 +157,46 @@ export default function AdminSettings() {
       return false;
     }
 
+    if (settings.enableInstapay && !String(settings.instapayNumber || '').trim()) {
+      toast.error('رقم Instapay مطلوب عند تفعيل وسيلة الدفع هذه.');
+      return false;
+    }
+
+    if (settings.enableWallet && !String(settings.walletNumber || '').trim()) {
+      toast.error('رقم المحفظة مطلوب عند تفعيل وسيلة الدفع هذه.');
+      return false;
+    }
+
+    if (settings.enableShipping) {
+      const shippingRates = Array.isArray(settings.shippingRates) ? settings.shippingRates : [];
+
+      if (!shippingRates.length) {
+        toast.error('أضيفي على الأقل محافظة واحدة مع رسوم الشحن.');
+        return false;
+      }
+
+      for (const rate of shippingRates) {
+        const governorate = String(rate?.governorate || '').trim();
+        const city = String(rate?.city || '').trim();
+        const fee = Number(rate?.fee);
+
+        if (!governorate) {
+          toast.error('اسم المحافظة مطلوب داخل جدول الشحن.');
+          return false;
+        }
+
+        if (!city) {
+          toast.error(`اسم المركز/المدينة مطلوب داخل المحافظة ${governorate}.`);
+          return false;
+        }
+
+        if (!Number.isFinite(fee) || fee < 0) {
+          toast.error(`رسوم الشحن للمحافظة ${governorate} يجب أن تكون رقمًا موجبًا أو صفر.`);
+          return false;
+        }
+      }
+    }
+
     return true;
   };
 
@@ -135,6 +212,15 @@ export default function AdminSettings() {
       freeShippingMinimum: Number(settings.freeShippingMinimum || 0),
       deliveryDays: Number.parseInt(String(settings.deliveryDays || 1), 10),
       taxRate: Number(settings.taxRate || 0),
+      shippingRates: Array.isArray(settings.shippingRates)
+        ? settings.shippingRates
+            .map((rate) => ({
+              governorate: String(rate?.governorate || '').trim(),
+              city: String(rate?.city || '').trim(),
+              fee: Number(rate?.fee || 0),
+            }))
+            .filter((rate) => rate.governorate && rate.city)
+        : [],
       aboutUs: String(settings.aboutUs || '').trim(),
     };
 
@@ -271,6 +357,129 @@ export default function AdminSettings() {
                     </label>
                   </div>
 
+                  <div className="rounded-xl border border-gray-200 dark:border-gray-700 p-4 space-y-4 bg-gray-50/60 dark:bg-gray-800/40">
+                    <div className="flex items-center justify-between gap-3 flex-wrap">
+                      <div>
+                        <h3 className="font-semibold text-gray-900 dark:text-white">أسعار الشحن حسب المحافظة والمركز</h3>
+                        <p className="text-sm text-gray-600 dark:text-gray-400">اختاري المحافظة ثم المركز/المدينة وحددي سعر الشحن لكل منطقة.</p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={addShippingRate}
+                        className="px-4 py-2 rounded-lg bg-primary-600 text-white hover:bg-primary-700 transition"
+                      >
+                        إضافة محافظة
+                      </button>
+                    </div>
+
+                    <div className="space-y-3">
+                      {(Array.isArray(settings.shippingRates) ? settings.shippingRates : []).length > 0 ? (
+                        settings.shippingRates.map((rate, index) => (
+                          <div key={`shipping-rate-${index}`} className="grid grid-cols-1 md:grid-cols-[1fr_1fr_140px_auto] gap-3 items-center">
+                            <input
+                              type="text"
+                              value={rate?.governorate || ''}
+                              onChange={(e) => handleShippingRateChange(index, 'governorate', e.target.value)}
+                              placeholder="اسم المحافظة"
+                              className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+                            />
+                            <input
+                              type="text"
+                              value={rate?.city || ''}
+                              onChange={(e) => handleShippingRateChange(index, 'city', e.target.value)}
+                              placeholder="اسم المركز/المدينة"
+                              className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+                            />
+                            <input
+                              type="number"
+                              value={rate?.fee ?? 0}
+                              onChange={(e) => handleShippingRateChange(index, 'fee', e.target.value)}
+                              placeholder="رسوم الشحن"
+                              className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => removeShippingRate(index)}
+                              className="px-4 py-2 rounded-lg border border-red-200 text-red-700 hover:bg-red-50 dark:border-red-900/40 dark:text-red-300 dark:hover:bg-red-900/20 transition"
+                            >
+                              حذف
+                            </button>
+                          </div>
+                        ))
+                      ) : (
+                        <div className="rounded-lg border border-dashed border-gray-300 dark:border-gray-600 px-4 py-6 text-sm text-gray-600 dark:text-gray-400">
+                          لا توجد محافظات مضافة بعد.
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="space-y-4 pt-2">
+                    <h3 className="font-semibold text-gray-900 dark:text-white">وسائل الدفع</h3>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <label className="flex items-center gap-3">
+                        <input
+                          type="checkbox"
+                          checked={Boolean(settings.enableCOD)}
+                          onChange={(e) => handleSettingChange('enableCOD', e.target.checked)}
+                          className="w-4 h-4 text-primary-600 rounded border-gray-300"
+                        />
+                        <span className="text-gray-700 dark:text-gray-300">الدفع عند الاستلام</span>
+                      </label>
+                      <label className="flex items-center gap-3">
+                        <input
+                          type="checkbox"
+                          checked={Boolean(settings.enableInstapay)}
+                          onChange={(e) => handleSettingChange('enableInstapay', e.target.checked)}
+                          className="w-4 h-4 text-primary-600 rounded border-gray-300"
+                        />
+                        <span className="text-gray-700 dark:text-gray-300">Instapay</span>
+                      </label>
+                      <label className="flex items-center gap-3">
+                        <input
+                          type="checkbox"
+                          checked={Boolean(settings.enableWallet)}
+                          onChange={(e) => handleSettingChange('enableWallet', e.target.checked)}
+                          className="w-4 h-4 text-primary-600 rounded border-gray-300"
+                        />
+                        <span className="text-gray-700 dark:text-gray-300">المحفظة الإلكترونية</span>
+                      </label>
+                      <label className="flex items-center gap-3">
+                        <input
+                          type="checkbox"
+                          checked={Boolean(settings.enablePaymob)}
+                          onChange={(e) => handleSettingChange('enablePaymob', e.target.checked)}
+                          className="w-4 h-4 text-primary-600 rounded border-gray-300"
+                        />
+                        <span className="text-gray-700 dark:text-gray-300">Paymob (لاحقًا)</span>
+                      </label>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">رقم Instapay</label>
+                        <input
+                          type="text"
+                          value={settings.instapayNumber || ''}
+                          onChange={(e) => handleSettingChange('instapayNumber', e.target.value)}
+                          placeholder="رقم/معرف Instapay"
+                          className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">رقم المحفظة</label>
+                        <input
+                          type="text"
+                          value={settings.walletNumber || ''}
+                          onChange={(e) => handleSettingChange('walletNumber', e.target.value)}
+                          placeholder="رقم المحفظة الإلكترونية"
+                          className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">معدل الضريبة (%)</label>
                     <input
@@ -396,6 +605,19 @@ export default function AdminSettings() {
                   <div>
                     <p className="text-gray-600 dark:text-gray-400">نسبة الضريبة</p>
                     <p className="text-gray-900 dark:text-white">{summary.taxRate}%</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-600 dark:text-gray-400">وسائل الدفع المفعلة</p>
+                    <p className="text-gray-900 dark:text-white leading-6">
+                      {[
+                        settings.enableCOD ? 'COD' : null,
+                        settings.enableInstapay ? 'Instapay' : null,
+                        settings.enableWallet ? 'Wallet' : null,
+                        settings.enablePaymob ? 'Paymob' : null,
+                      ]
+                        .filter(Boolean)
+                        .join(' • ') || '-'}
+                    </p>
                   </div>
                   <div>
                     <p className="text-gray-600 dark:text-gray-400">معاينة About Us</p>

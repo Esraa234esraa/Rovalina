@@ -56,6 +56,7 @@ export default function AdminOrders() {
       total: Number(order.total || 0),
       items: order.itemsCount || 0,
       payment: order.paymentMethod,
+      paymentProofImage: order.paymentProofImage || order.paymentResponse?.paymentProofImage || '',
       address: [order.city, order.governorate].filter(Boolean).join('، ') || '-',
     }));
   }, [remoteOrdersData]);
@@ -340,6 +341,18 @@ export default function AdminOrders() {
                     {selectedOrder.payment}
                   </p>
                 </div>
+                {selectedOrder.paymentProofImage ? (
+                  <div className="col-span-2">
+                    <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">صورة التحويل</p>
+                    <a href={selectedOrder.paymentProofImage} target="_blank" rel="noreferrer" className="block">
+                      <img
+                        src={selectedOrder.paymentProofImage}
+                        alt="إثبات التحويل"
+                        className="w-full max-h-80 object-contain rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900"
+                      />
+                    </a>
+                  </div>
+                ) : null}
                 <div>
                   <p className="text-sm text-gray-600 dark:text-gray-400">عدد المنتجات</p>
                   <p className="font-medium text-gray-900 dark:text-white">

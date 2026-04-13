@@ -1,7 +1,6 @@
 ﻿import { useNavigate } from 'react-router-dom';
 import { Heart, ShoppingCart, Trash2 } from 'lucide-react';
 import ProductCard from '../components/ui/ProductCard';
-import { useUserStore } from '../store';
 import LoadingState from '../components/ui/LoadingState';
 import { useToast } from '../hooks/useToast';
 import { useAddToCartMutation } from '../hooks/useUserCart';
@@ -13,7 +12,6 @@ import {
 export default function WishlistPage() {
   const navigate = useNavigate();
   const toast = useToast();
-  const { isLoggedIn } = useUserStore();
   const { data: wishlist, isLoading } = useUserWishlistQuery();
   const removeWishlistItemMutation = useRemoveWishlistItemMutation();
   const addToCartMutation = useAddToCartMutation();
@@ -26,30 +24,6 @@ export default function WishlistPage() {
     });
     toast.success('تم مسح قائمة المفضلة.');
   };
-
-  if (!isLoggedIn) {
-    return (
-      <div className="min-h-screen bg-background-200 dark:bg-dark-bg">
-        <div className="container-fluid py-16">
-          <div className="text-center py-20">
-            <Heart className="w-24 h-24 mx-auto text-secondary-500 mb-6" />
-            <h1 className="text-4xl font-bold text-ink-800 dark:text-secondary-100 mb-4">
-              سجلي دخولك أولاً
-            </h1>
-            <p className="text-ink-600 dark:text-secondary-300 mb-8">
-              لعرض وإدارة المنتجات المفضلة
-            </p>
-            <button
-              onClick={() => navigate('/login')}
-              className="px-8 py-3 bg-primary-600 hover:bg-primary-700 text-ink-900 rounded-lg transition font-semibold"
-            >
-              تسجيل الدخول
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   if (isLoading) {
     return <LoadingState text="جاري تحميل المفضلة..." className="py-24" />;
@@ -112,7 +86,7 @@ export default function WishlistPage() {
                 <button
                   onClick={() =>
                     addToCartMutation.mutate(
-                      { productId: item.productId, quantity: 1 },
+                      { productId: item.productId, quantity: 1, product: item.product },
                       {
                         onSuccess: () => toast.success('تمت إضافة المنتج إلى السلة.'),
                         onError: (error) => {

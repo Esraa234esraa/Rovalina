@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { shopApi } from '../services/shopApi';
-import { useUserStore } from '../store';
+import { useAuthStore, useCartStore, useUserStore } from '../store';
 
 export const userCartKeys = {
   all: ['user-cart'],
@@ -37,27 +37,55 @@ const normalizeCart = (cart) => {
 
 export const useUserCartQuery = () => {
   const token = useUserStore((state) => state.token);
+  const adminToken = useAuthStore((state) => state.token);
+  const guestSignature = useCartStore((state) => state.items.map((item) => `${item.id}:${item.quantity}`).join('|'));
+  const hasAuthToken = Boolean(token || adminToken);
 
   return useQuery({
-    queryKey: userCartKeys.all,
+    queryKey: [...userCartKeys.all, hasAuthToken ? `auth:${token || adminToken}` : `guest:${guestSignature}`],
     queryFn: async () => {
-      const response = await shopApi.getCart();
-      return normalizeCart(response?.data?.data);
+      if (hasAuthToken) {
+        const response = await shopApi.getCart();
+        return normalizeCart(response?.data?.data);
+      }
+
+      return normalizeCart({
+        items: useCartStore.getState().items.map((item) => ({
+          id: item.id,
+          productId: item.id,
+          quantity: item.quantity,
+          product: item,
+        })),
+      });
     },
-    enabled: Boolean(token),
+    enabled: true,
     staleTime: 2 * 60 * 1000,
     gcTime: 20 * 60 * 1000,
     retry: 1,
-    placeholderData: (previousData) => previousData,
   });
 };
 
 export const useCartTotalsQuery = () => {
   const token = useUserStore((state) => state.token);
+  const adminToken = useAuthStore((state) => state.token);
+  const hasAuthToken = Boolean(token || adminToken);
 
   return useQuery({
-    queryKey: userCartKeys.total,
+    queryKey: [...userCartKeys.total, hasAuthToken ? `auth:${token || adminToken}` : 'guest'],
     queryFn: async () => {
+      if (!hasAuthToken) {
+        const items = useCartStore.getState().items;
+        const subtotal = items.reduce((sum, item) => sum + Number(item.price || 0) * Number(item.quantity || 0), 0);
+        return {
+          subtotal,
+          shippingFee: 0,
+          taxAmount: 0,
+          discountAmount: 0,
+          total: subtotal,
+          currency: 'EGP',
+        };
+      }
+
       try {
         const response = await shopApi.calculateOrderTotal();
         return response?.data?.data || null;
@@ -68,7 +96,7 @@ export const useCartTotalsQuery = () => {
         throw error;
       }
     },
-    enabled: Boolean(token),
+    enabled: true,
     staleTime: 60 * 1000,
     retry: 1,
   });
@@ -76,14 +104,32 @@ export const useCartTotalsQuery = () => {
 
 export const useAddToCartMutation = () => {
   const queryClient = useQueryClient();
+  const token = useUserStore((state) => state.token);
+  const adminToken = useAuthStore((state) => state.token);
+  const hasAuthToken = Boolean(token || adminToken);
 
   return useMutation({
-    mutationFn: async ({ productId, quantity = 1 }) => {
-      const response = await shopApi.addToCart({ productId, quantity });
-      return normalizeCart(response?.data?.data);
+    mutationFn: async ({ productId, quantity = 1, product }) => {
+      if (hasAuthToken) {
+        const response = await shopApi.addToCart({ productId, quantity });
+        return normalizeCart(response?.data?.data);
+      }
+
+      const cartStore = useCartStore.getState();
+      const productToStore = product || { id: productId, productId, quantity, price: 0 };
+      cartStore.addToCart(productToStore, quantity);
+
+      return normalizeCart({
+        items: useCartStore.getState().items.map((item) => ({
+          id: item.id,
+          productId: item.id,
+          quantity: item.quantity,
+          product: item,
+        })),
+      });
     },
     onSuccess: (data) => {
-      queryClient.setQueryData(userCartKeys.all, data);
+      queryClient.invalidateQueries({ queryKey: userCartKeys.all });
       queryClient.invalidateQueries({ queryKey: userCartKeys.total });
     },
   });
@@ -91,14 +137,29 @@ export const useAddToCartMutation = () => {
 
 export const useUpdateCartItemMutation = () => {
   const queryClient = useQueryClient();
+  const token = useUserStore((state) => state.token);
+  const adminToken = useAuthStore((state) => state.token);
+  const hasAuthToken = Boolean(token || adminToken);
 
   return useMutation({
     mutationFn: async ({ itemId, quantity }) => {
-      const response = await shopApi.updateCartItem(itemId, { quantity });
-      return normalizeCart(response?.data?.data);
+      if (hasAuthToken) {
+        const response = await shopApi.updateCartItem(itemId, { quantity });
+        return normalizeCart(response?.data?.data);
+      }
+
+      useCartStore.getState().updateQuantity(itemId, quantity);
+      return normalizeCart({
+        items: useCartStore.getState().items.map((item) => ({
+          id: item.id,
+          productId: item.id,
+          quantity: item.quantity,
+          product: item,
+        })),
+      });
     },
     onSuccess: (data) => {
-      queryClient.setQueryData(userCartKeys.all, data);
+      queryClient.invalidateQueries({ queryKey: userCartKeys.all });
       queryClient.invalidateQueries({ queryKey: userCartKeys.total });
     },
   });
@@ -106,14 +167,29 @@ export const useUpdateCartItemMutation = () => {
 
 export const useRemoveCartItemMutation = () => {
   const queryClient = useQueryClient();
+  const token = useUserStore((state) => state.token);
+  const adminToken = useAuthStore((state) => state.token);
+  const hasAuthToken = Boolean(token || adminToken);
 
   return useMutation({
     mutationFn: async (itemId) => {
-      const response = await shopApi.removeCartItem(itemId);
-      return normalizeCart(response?.data?.data);
+      if (hasAuthToken) {
+        const response = await shopApi.removeCartItem(itemId);
+        return normalizeCart(response?.data?.data);
+      }
+
+      useCartStore.getState().removeFromCart(itemId);
+      return normalizeCart({
+        items: useCartStore.getState().items.map((item) => ({
+          id: item.id,
+          productId: item.id,
+          quantity: item.quantity,
+          product: item,
+        })),
+      });
     },
     onSuccess: (data) => {
-      queryClient.setQueryData(userCartKeys.all, data);
+      queryClient.invalidateQueries({ queryKey: userCartKeys.all });
       queryClient.invalidateQueries({ queryKey: userCartKeys.total });
     },
   });
@@ -121,7 +197,15 @@ export const useRemoveCartItemMutation = () => {
 
 export const useCartCount = () => {
   const cartQuery = useUserCartQuery();
-  const items = Array.isArray(cartQuery.data?.items) ? cartQuery.data.items : [];
+  const token = useUserStore((state) => state.token);
+  const adminToken = useAuthStore((state) => state.token);
+  const guestItems = useCartStore((state) => state.items);
+  const isAuthenticated = Boolean(token || adminToken);
+  const items = isAuthenticated
+    ? Array.isArray(cartQuery.data?.items)
+      ? cartQuery.data.items
+      : []
+    : guestItems;
   const count = items.reduce((sum, item) => sum + Number(item.quantity || 0), 0);
 
   return {

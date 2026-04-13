@@ -22,6 +22,7 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error?.response?.status === 401) {
+      // Keep both stores in sync if a token is actually invalid.
       useAuthStore.getState().logout();
       useUserStore.getState().logoutUser();
     }

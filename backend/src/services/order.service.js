@@ -4,6 +4,60 @@ import { sendOrderNotification } from './whatsapp.service.js';
 
 const buildOrderNumber = () => `ORD-${Date.now()}`;
 
+const normalizeText = (value) =>
+  String(value || '')
+    .trim()
+    .toLowerCase();
+
+const normalizeShippingRates = (settings) => {
+  const rates = settings?.shippingRates;
+  if (Array.isArray(rates)) {
+    return rates
+      .map((rate) => ({
+        governorate: String(rate?.governorate || rate?.name || '').trim(),
+        city: String(rate?.city || rate?.center || rate?.district || '').trim(),
+        fee: Number(rate?.fee ?? rate?.shippingFee ?? rate?.price ?? 0),
+      }))
+      .filter((rate) => rate.governorate && rate.city);
+  }
+
+  if (rates && typeof rates === 'object') {
+    return Object.entries(rates)
+      .map(([governorate, fee]) => ({
+        governorate: String(governorate || '').trim(),
+        city: '',
+        fee: Number(fee || 0),
+      }))
+      .filter((rate) => rate.governorate);
+  }
+
+  return [];
+};
+
+const resolveShippingFee = (settings, subtotal, governorate, city, fallbackShippingFee = 0) => {
+  if (!settings?.enableShipping) return 0;
+
+  const freeShippingMinimum = Number(settings?.freeShippingMinimum || 0);
+  if (subtotal >= freeShippingMinimum) {
+    return 0;
+  }
+
+  const normalizedGovernorate = normalizeText(governorate);
+  const normalizedCity = normalizeText(city);
+  const shippingRates = normalizeShippingRates(settings);
+  const matchedRate = shippingRates.find(
+    (rate) =>
+      normalizeText(rate.governorate) === normalizedGovernorate &&
+      normalizeText(rate.city) === normalizedCity
+  );
+
+  if (matchedRate) {
+    return Number(matchedRate.fee || 0);
+  }
+
+  return Number(settings?.shippingFee ?? fallbackShippingFee ?? 0);
+};
+
 const createAdminOrderNotifications = async (tx, { order, title, message, type }) => {
   const adminUsers = await tx.user.findMany({
     where: { role: { in: ['ADMIN', 'SUPER_ADMIN'] } },
@@ -28,14 +82,10 @@ const createAdminOrderNotifications = async (tx, { order, title, message, type }
   });
 };
 
-const calculateTotals = async (subtotal) => {
+const calculateTotals = async (subtotal, governorate, city, fallbackShippingFee = 0) => {
   const settings = await prisma.storeSettings.findUnique({ where: { id: 'STORE' } });
 
-  const shippingFeeRaw = settings?.enableShipping
-    ? subtotal >= Number(settings?.freeShippingMinimum || 0)
-      ? 0
-      : Number(settings?.shippingFee || 0)
-    : 0;
+  const shippingFeeRaw = resolveShippingFee(settings, subtotal, governorate, city, fallbackShippingFee);
 
   const taxAmountRaw = settings?.enableTax
     ? (subtotal * Number(settings?.taxRate || 0)) / 100
@@ -95,7 +145,7 @@ export const orderService = {
       0
     );
 
-    return calculateTotals(subtotal);
+    return calculateTotals(subtotal, null, null);
   },
 
   async createOrderFromCart(userId, payload) {
@@ -110,7 +160,15 @@ export const orderService = {
       addressLine,
       notes,
       shippingAddressId,
+      paymentProofImage = null,
     } = payload;
+
+    const normalizedPaymentMethod = String(paymentMethod || 'COD').toUpperCase();
+    const requiresPaymentProof = normalizedPaymentMethod === 'INSTAPAY' || normalizedPaymentMethod === 'WALLET';
+
+    if (requiresPaymentProof && !String(paymentProofImage || '').trim()) {
+      throw new ApiError(400, 'يجب إرفاق صورة إيصال التحويل قبل تأكيد الطلب.');
+    }
 
     const cart = await prisma.cart.findUnique({
       where: { userId },
@@ -160,7 +218,7 @@ export const orderService = {
     });
 
     const subtotal = orderItemsData.reduce((sum, it) => sum + it.totalPrice, 0);
-    const totals = await calculateTotals(subtotal);
+    const totals = await calculateTotals(subtotal, governorate, city);
 
     const order = await prisma.$transaction(async (tx) => {
       const createdOrder = await tx.order.create({
@@ -168,7 +226,7 @@ export const orderService = {
           orderNumber: buildOrderNumber(),
           userId,
           shippingAddressId: shippingAddressId || null,
-          paymentMethod: paymentMethod || 'COD',
+          paymentMethod: normalizedPaymentMethod,
           subtotal: totals.subtotal,
           shippingFee: totals.shippingFee,
           taxAmount: totals.taxAmount,
@@ -183,6 +241,13 @@ export const orderService = {
           postalCode,
           addressLine,
           notes,
+          paymentProofImage: requiresPaymentProof ? paymentProofImage : null,
+          paymentResponse: requiresPaymentProof && paymentProofImage
+            ? {
+                paymentProofImage,
+                paymentProofSubmittedAt: new Date().toISOString(),
+              }
+            : undefined,
           items: {
             create: orderItemsData,
           },
@@ -235,8 +300,16 @@ export const orderService = {
       shippingFee = 0,
       taxAmount = 0,
       discountAmount = 0,
+      paymentProofImage = null,
       shippingAddressId,
     } = payload;
+
+    const normalizedPaymentMethod = String(paymentMethod || 'COD').toUpperCase();
+    const requiresPaymentProof = normalizedPaymentMethod === 'INSTAPAY' || normalizedPaymentMethod === 'WALLET';
+
+    if (requiresPaymentProof && !String(paymentProofImage || '').trim()) {
+      throw new ApiError(400, 'يجب إرفاق صورة إيصال التحويل قبل تأكيد الطلب.');
+    }
 
     if (!Array.isArray(items) || items.length === 0) {
       throw new ApiError(400, 'Order items are required');
@@ -273,7 +346,7 @@ export const orderService = {
     });
 
     const subtotal = orderItemsData.reduce((sum, it) => sum + it.totalPrice, 0);
-    const total = subtotal + Number(shippingFee) + Number(taxAmount) - Number(discountAmount);
+    const totals = await calculateTotals(subtotal, governorate, city, shippingFee);
 
     const order = await prisma.$transaction(async (tx) => {
       const createdOrder = await tx.order.create({
@@ -281,12 +354,12 @@ export const orderService = {
           orderNumber: buildOrderNumber(),
           userId,
           shippingAddressId: shippingAddressId || null,
-          paymentMethod: paymentMethod || 'COD',
-          subtotal,
-          shippingFee: Number(shippingFee),
-          taxAmount: Number(taxAmount),
-          discountAmount: Number(discountAmount),
-          total,
+          paymentMethod: normalizedPaymentMethod,
+          subtotal: totals.subtotal,
+          shippingFee: totals.shippingFee,
+          taxAmount: totals.taxAmount,
+          discountAmount: Number(discountAmount) || totals.discountAmount,
+          total: Number((totals.total - Number(discountAmount || 0)).toFixed(2)),
           customerName,
           customerEmail,
           customerPhone,
@@ -295,6 +368,13 @@ export const orderService = {
           postalCode,
           addressLine,
           notes,
+          paymentProofImage: requiresPaymentProof ? paymentProofImage : null,
+          paymentResponse: requiresPaymentProof && paymentProofImage
+            ? {
+                paymentProofImage,
+                paymentProofSubmittedAt: new Date().toISOString(),
+              }
+            : undefined,
           items: {
             create: orderItemsData,
           },
@@ -341,10 +421,10 @@ export const orderService = {
   getOrderById(id) {
     return prisma.order.findUnique({
       where: { id },
-      include: {
-        items: {
-          include: { product: true },
-        },
+        include: {
+          items: {
+            include: { product: true },
+          },
         user: {
           select: {
             id: true,

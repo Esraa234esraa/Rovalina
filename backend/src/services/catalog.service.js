@@ -1,5 +1,73 @@
 import { prisma } from '../config/prisma.js';
 
+const DEFAULT_PUBLIC_SETTINGS = {
+  id: 'STORE',
+  storeName: 'Rovalina Lenses',
+  storeEmail: 'info@example.com',
+  storePhone: '',
+  storeAddress: '',
+  city: '',
+  governorate: '',
+  postalCode: '',
+  shippingFee: 0,
+  freeShippingMinimum: 0,
+  deliveryDays: 3,
+  shippingRates: [],
+  enableShipping: true,
+  enableCOD: true,
+  enableInstapay: false,
+  enableWallet: false,
+  enablePaymob: false,
+  enableTax: false,
+  taxRate: 0,
+  walletNumber: '',
+  instapayNumber: '',
+  metaTitle: '',
+  metaDescription: '',
+  facebook: '',
+  instagram: '',
+  tiktok: '',
+  whatsapp: '',
+  supportEmail: '',
+  supportPhone: '',
+  aboutUs: '',
+  enableEmailNotifications: true,
+  notifyOnNewOrder: true,
+  notifyOnNewReview: true,
+};
+
+const normalizeShippingRates = (value) => {
+  const source = Array.isArray(value) ? value : [];
+  return source
+    .map((rate) => ({
+      governorate: String(rate?.governorate || '').trim(),
+      city: String(rate?.city || rate?.center || rate?.district || '').trim(),
+      fee: Number(rate?.fee ?? rate?.shippingFee ?? rate?.price ?? 0),
+    }))
+    .filter((rate) => rate.governorate && rate.city);
+};
+
+const normalizePublicSettings = (raw) => {
+  const source = raw && typeof raw === 'object' ? raw : {};
+  return {
+    ...DEFAULT_PUBLIC_SETTINGS,
+    ...source,
+    shippingFee: Number(source.shippingFee ?? DEFAULT_PUBLIC_SETTINGS.shippingFee),
+    freeShippingMinimum: Number(source.freeShippingMinimum ?? DEFAULT_PUBLIC_SETTINGS.freeShippingMinimum),
+    deliveryDays: Number(source.deliveryDays ?? DEFAULT_PUBLIC_SETTINGS.deliveryDays),
+    taxRate: Number(source.taxRate ?? DEFAULT_PUBLIC_SETTINGS.taxRate),
+    enableShipping: Boolean(source.enableShipping ?? DEFAULT_PUBLIC_SETTINGS.enableShipping),
+    enableCOD: Boolean(source.enableCOD ?? DEFAULT_PUBLIC_SETTINGS.enableCOD),
+    enableInstapay: Boolean(source.enableInstapay ?? DEFAULT_PUBLIC_SETTINGS.enableInstapay),
+    enableWallet: Boolean(source.enableWallet ?? DEFAULT_PUBLIC_SETTINGS.enableWallet),
+    enablePaymob: Boolean(source.enablePaymob ?? DEFAULT_PUBLIC_SETTINGS.enablePaymob),
+    enableTax: Boolean(source.enableTax ?? DEFAULT_PUBLIC_SETTINGS.enableTax),
+    walletNumber: String(source.walletNumber || '').trim(),
+    instapayNumber: String(source.instapayNumber || '').trim(),
+    shippingRates: normalizeShippingRates(source.shippingRates),
+  };
+};
+
 export const catalogService = {
   async listProducts(query) {
     const {
@@ -183,7 +251,7 @@ export const catalogService = {
   },
 
   getStoreSettings() {
-    return prisma.storeSettings.findUnique({ where: { id: 'STORE' } });
+    return prisma.storeSettings.findUnique({ where: { id: 'STORE' } }).then((settings) => normalizePublicSettings(settings));
   },
 
   getOfferById(id) {

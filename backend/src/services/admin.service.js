@@ -77,6 +77,7 @@ const SETTINGS_BOOLEAN_KEYS = [
   'enableCOD',
   'enableInstapay',
   'enableWallet',
+  'enablePaymob',
   'enableTax',
   'enableEmailNotifications',
   'notifyOnNewOrder',
@@ -86,6 +87,19 @@ const SETTINGS_BOOLEAN_KEYS = [
 const SETTINGS_NUMBER_KEYS = ['shippingFee', 'freeShippingMinimum', 'taxRate'];
 
 const SETTINGS_INTEGER_KEYS = ['deliveryDays'];
+
+const SETTINGS_JSON_KEYS = ['shippingRates'];
+
+const normalizeShippingRates = (value) => {
+  const source = Array.isArray(value) ? value : [];
+  return source
+    .map((rate) => ({
+      governorate: String(rate?.governorate || '').trim(),
+      city: String(rate?.city || rate?.center || rate?.district || '').trim(),
+      fee: Number(rate?.fee ?? rate?.shippingFee ?? rate?.price ?? 0),
+    }))
+    .filter((rate) => rate.governorate && rate.city);
+};
 
 const SETTINGS_STRING_KEYS = [
   'storeName',
@@ -104,6 +118,8 @@ const SETTINGS_STRING_KEYS = [
   'supportEmail',
   'supportPhone',
   'aboutUs',
+  'walletNumber',
+  'instapayNumber',
 ];
 
 const normalizeSettingsPayload = (data) => {
@@ -131,6 +147,27 @@ const normalizeSettingsPayload = (data) => {
     if (!Object.prototype.hasOwnProperty.call(input, key)) continue;
     const parsed = Number.parseInt(String(input[key]), 10);
     normalized[key] = Number.isFinite(parsed) && parsed > 0 ? parsed : 1;
+  }
+
+  for (const key of SETTINGS_JSON_KEYS) {
+    if (!Object.prototype.hasOwnProperty.call(input, key)) continue;
+    const value = input[key];
+    if (Array.isArray(value)) {
+      normalized[key] = key === 'shippingRates' ? normalizeShippingRates(value) : value;
+      continue;
+    }
+
+    if (typeof value === 'string' && value.trim()) {
+      try {
+        const parsed = JSON.parse(value);
+        normalized[key] = key === 'shippingRates' ? normalizeShippingRates(parsed) : parsed;
+      } catch {
+        normalized[key] = [];
+      }
+      continue;
+    }
+
+    normalized[key] = value ?? null;
   }
 
   return normalized;
@@ -310,7 +347,14 @@ export const adminService = {
   },
 
   getSettings() {
-    return prisma.storeSettings.findUnique({ where: { id: 'STORE' } });
+    return prisma.storeSettings.findUnique({ where: { id: 'STORE' } }).then((settings) => {
+      if (!settings) return settings;
+
+      return {
+        ...settings,
+        shippingRates: normalizeShippingRates(settings.shippingRates),
+      };
+    });
   },
 
   async upsertSettings(data) {

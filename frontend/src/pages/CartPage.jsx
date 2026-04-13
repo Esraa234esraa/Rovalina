@@ -1,5 +1,4 @@
 import { useNavigate } from 'react-router-dom';
-import { useUserStore } from '../store';
 import CartEmptyState from '../components/cart/CartEmptyState';
 import CartItemCard from '../components/cart/CartItemCard';
 import CartSummaryCard from '../components/cart/CartSummaryCard';
@@ -14,7 +13,6 @@ import { useToast } from '../hooks/useToast';
 export default function CartPage() {
   const navigate = useNavigate();
   const toast = useToast();
-  const { isLoggedIn } = useUserStore();
   const { data: cart, isLoading } = useUserCartQuery();
   const updateQuantityMutation = useUpdateCartItemMutation();
   const removeItemMutation = useRemoveCartItemMutation();
@@ -24,10 +22,6 @@ export default function CartPage() {
   const subtotal = Number(cart?.subtotal || 0);
   const shipping = subtotal >= 500 ? 0 : 50;
   const total = subtotal + shipping;
-
-  if (!isLoggedIn) {
-    return <CartEmptyState onShop={() => navigate('/login')} />;
-  }
 
   if (isLoading) {
     return <LoadingState text="جاري تحميل السلة..." className="py-24" />;

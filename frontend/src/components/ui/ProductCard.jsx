@@ -2,7 +2,6 @@
 import { motion } from 'framer-motion';
 import { ShoppingCart, Heart, Star } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { useUserStore } from '../../store';
 import { useToast } from '../../hooks/useToast';
 import { useAddToCartMutation } from '../../hooks/useUserCart';
 import {
@@ -13,7 +12,6 @@ import {
 
 export default function ProductCard({ product }) {
   const navigate = useNavigate();
-  const { isLoggedIn } = useUserStore();
   const toast = useToast();
 
   const addToCartMutation = useAddToCartMutation();
@@ -36,14 +34,8 @@ export default function ProductCard({ product }) {
       : product.duration;
 
   const handleAddToCart = () => {
-    if (!isLoggedIn) {
-      toast.info('سجلي دخولك أولاً لإضافة المنتجات للسلة.');
-      navigate('/login');
-      return;
-    }
-
     addToCartMutation.mutate(
-      { productId: product.id, quantity: 1 },
+      { productId: product.id, quantity: 1, product },
       {
         onSuccess: () => toast.success('تمت إضافة المنتج إلى السلة.'),
         onError: (error) => {
@@ -54,12 +46,6 @@ export default function ProductCard({ product }) {
   };
 
   const handleWishlistToggle = () => {
-    if (!isLoggedIn) {
-      toast.info('سجلي دخولك أولاً لإضافة المنتجات للمفضلة.');
-      navigate('/login');
-      return;
-    }
-
     if (isWishlisted) {
       const currentItems = Array.isArray(wishlistData?.items) ? wishlistData.items : [];
       const matchedItem = currentItems.find(
@@ -79,7 +65,7 @@ export default function ProductCard({ product }) {
     }
 
     addToWishlistMutation.mutate(
-      { productId: product.id },
+      { productId: product.id, product },
       {
         onSuccess: () => toast.success('تمت إضافة المنتج إلى المفضلة.'),
         onError: (error) => {

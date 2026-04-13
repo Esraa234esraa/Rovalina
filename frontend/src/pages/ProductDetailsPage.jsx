@@ -146,14 +146,16 @@ export default function ProductDetailsPage() {
   const handleAddToCart = () => {
     if (!product) return;
 
-    if (!isLoggedIn) {
-      toast.info('سجلي دخولك أولاً لإضافة المنتج إلى السلة.');
-      navigate('/login');
-      return;
-    }
-
     addToCartMutation.mutate(
-      { productId: product.id, quantity },
+      {
+        productId: product.id,
+        quantity,
+        product: {
+          ...product,
+          selectedColor: activeColorName || null,
+          color: activeColorName || product.color,
+        },
+      },
       {
         onSuccess: () => toast.success('تمت إضافة المنتج إلى السلة.'),
         onError: (error) => {
@@ -165,12 +167,6 @@ export default function ProductDetailsPage() {
 
   const handleWishlistToggle = () => {
     if (!product) return;
-
-    if (!isLoggedIn) {
-      toast.info('سجلي دخولك أولاً لإضافة المنتج إلى المفضلة.');
-      navigate('/login');
-      return;
-    }
 
     if (liked) {
       const currentItems = Array.isArray(wishlistData?.items) ? wishlistData.items : [];
@@ -191,7 +187,7 @@ export default function ProductDetailsPage() {
     }
 
     addToWishlistMutation.mutate(
-      { productId: product.id },
+      { productId: product.id, product },
       {
         onSuccess: () => toast.success('تمت إضافة المنتج إلى المفضلة.'),
         onError: (error) => {

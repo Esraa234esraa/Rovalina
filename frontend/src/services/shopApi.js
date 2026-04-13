@@ -17,6 +17,10 @@ export const shopApi = {
     return api.patch('/auth/change-password', payload);
   },
 
+  getSettings() {
+    return api.get('/settings');
+  },
+
   getCart() {
     return api.get('/cart');
   },
@@ -51,6 +55,10 @@ export const shopApi = {
 
   calculateOrderTotal() {
     return api.get('/orders/calculate-total');
+  },
+
+  createOrder(payload) {
+    return api.post('/orders', payload);
   },
 
   createOrderFromCart(payload) {
