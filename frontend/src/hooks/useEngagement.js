@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import emailjs from '@emailjs/browser';
 import api from '../services/http';
 
 export const engagementKeys = {
@@ -40,13 +41,27 @@ export const useCreateProductReviewMutation = (productId) => {
 export const useCreateContactMessageMutation = () =>
   useMutation({
     mutationFn: async ({ name, email, phone, message }) => {
-      const response = await api.post('/contact/messages', {
-        name,
-        email,
-        phone,
-        message,
+      const serviceId = String(import.meta.env.VITE_EMAILJS_SERVICE_ID || '').trim();
+      const templateId = String(import.meta.env.VITE_EMAILJS_TEMPLATE_ID || '').trim();
+      const publicKey = String(import.meta.env.VITE_EMAILJS_PUBLIC_KEY || '').trim();
+
+      if (!serviceId || !templateId || !publicKey) {
+        throw new Error('EmailJS configuration is missing.');
+      }
+
+      const templateParams = {
+        from_name: String(name || '').trim(),
+        from_email: String(email || '').trim(),
+        reply_to: String(email || '').trim(),
+        phone: String(phone || '').trim() || '-',
+        message: String(message || '').trim(),
+      };
+
+      await emailjs.send(serviceId, templateId, templateParams, {
+        publicKey,
       });
-      return response?.data?.data;
+
+      return { sent: true };
     },
   });
 

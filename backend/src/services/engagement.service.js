@@ -1,4 +1,5 @@
 import { prisma } from '../config/prisma.js';
+import { emailService } from './email.service.js';
 
 const DEFAULT_REVIEW_AVATAR =
   'https://images.unsplash.com/photo-1494790108377-be9c29b29330?q=80&w=256&auto=format&fit=crop';
@@ -147,8 +148,8 @@ export const engagementService = {
     });
   },
 
-  createContactMessage(payload, userId = null) {
-    return prisma.contactMessage.create({
+  async createContactMessage(payload, userId = null) {
+    const createdMessage = await prisma.contactMessage.create({
       data: {
         userId,
         name: payload.name,
@@ -157,10 +158,23 @@ export const engagementService = {
         message: payload.message,
       },
     });
+
+    void emailService
+      .sendContactMessageNotification({
+        name: payload.name,
+        email: payload.email,
+        phone: payload.phone,
+        message: payload.message,
+      })
+      .catch((error) => {
+        console.error('Failed to send contact message notification:', error);
+      });
+
+    return createdMessage;
   },
 
-  subscribeNewsletter({ email, userId = null }) {
-    return prisma.newsletterSubscription.upsert({
+  async subscribeNewsletter({ email, userId = null }) {
+    const subscription = await prisma.newsletterSubscription.upsert({
       where: { email },
       update: {
         isActive: true,
@@ -172,6 +186,14 @@ export const engagementService = {
         userId,
       },
     });
+
+    void emailService
+      .sendNewsletterNotification({ email })
+      .catch((error) => {
+        console.error('Failed to send newsletter notification:', error);
+      });
+
+    return subscription;
   },
 
   listFAQs() {
