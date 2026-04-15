@@ -9,12 +9,13 @@
     "seed:admin": "tsx src/seed/admin.ts",
     "dev": "tsx watch src/server.ts",
     "start": "node --import tsx src/server.ts",
-    "start:railway": "npm run prisma:generate && npm run prisma:push && npm start",
+    "start:railway": "npm run prisma:generate && npm run prisma:push:retry && npm start",
     "typecheck": "tsc --noEmit",
     "prisma:generate": "prisma generate --schema=./prisma/schema.prisma",
     "prisma:migrate": "prisma migrate dev --schema=./prisma/schema.prisma",
     "prisma:deploy": "prisma migrate deploy --schema=./prisma/schema.prisma",
     "prisma:push": "prisma db push --schema=./prisma/schema.prisma",
+    "prisma:push:retry": "node ./scripts/prisma-push-retry.mjs",
     "prisma:studio": "prisma studio --schema=./prisma/schema.prisma"
   },
   "dependencies": {

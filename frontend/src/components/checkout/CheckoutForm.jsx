@@ -22,7 +22,7 @@ export default function CheckoutForm({
   onPaymentProofChange,
 }) {
   return (
-    <form onSubmit={onSubmit} className="lg:col-span-2 card p-6 space-y-4">
+    <form onSubmit={onSubmit} noValidate className="lg:col-span-2 card p-6 space-y-4">
       <h1 className="text-3xl font-bold mb-2">إكمال الطلب</h1>
 
       <input

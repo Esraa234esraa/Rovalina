@@ -386,13 +386,13 @@ export default function AdminOffers() {
       </div>
 
       {isModalOpen && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-dark-card rounded-lg max-w-2xl w-full max-h-screen overflow-y-auto">
-            <div className="sticky top-0 px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-dark-card">
-              <h2 className="text-2xl font-bold text-gray-900 dark:text-white">{isEditMode ? 'تعديل العرض' : 'إضافة عرض جديد'}</h2>
+        <div className="fixed inset-0 bg-black/50 z-50 p-3 sm:p-4 flex items-start sm:items-center justify-center overflow-y-auto hide-scrollbar">
+          <div className="bg-white dark:bg-dark-card rounded-lg max-w-3xl w-full max-h-[82vh] sm:max-h-[78vh] flex flex-col overflow-hidden">
+            <div className="px-4 sm:px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-dark-card shrink-0">
+              <h2 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">{isEditMode ? 'تعديل العرض' : 'إضافة عرض جديد'}</h2>
             </div>
 
-            <div className="p-6">
+            <div className="p-4 sm:p-6 overflow-y-auto hide-scrollbar">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">عنوان العرض (العربية)</label>
@@ -534,7 +534,7 @@ export default function AdminOffers() {
               </div>
             </div>
 
-            <div className="sticky bottom-0 px-6 py-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 flex justify-end gap-3">
+            <div className="px-4 sm:px-6 py-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 flex flex-col-reverse sm:flex-row justify-end gap-3 shrink-0">
               <button
                 onClick={() => setIsModalOpen(false)}
                 disabled={isSaving}

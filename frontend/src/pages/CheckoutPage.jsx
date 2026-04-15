@@ -239,6 +239,91 @@ export default function CheckoutPage() {
     return <CheckoutEmptyState onShop={() => navigate('/shop')} />;
   }
 
+  const validateCheckoutForm = () => {
+    const fullName = String(form.fullName || '').trim();
+    const phone = String(form.phone || '').trim();
+    const email = String(form.email || '').trim();
+    const governorate = String(form.governorate || '').trim();
+    const city = String(form.city || '').trim();
+    const address = String(form.address || '').trim();
+    const phoneDigits = phone.replace(/\D/g, '');
+
+    if (!availablePaymentOptions.length) {
+      toast.error('لا توجد وسيلة دفع مفعلة حالياً.');
+      return false;
+    }
+
+    if (!fullName) {
+      toast.error('الاسم الكامل مطلوب.');
+      return false;
+    }
+
+    if (fullName.length < 3) {
+      toast.error('الاسم الكامل يجب أن يكون 3 أحرف على الأقل.');
+      return false;
+    }
+
+    if (!phone) {
+      toast.error('رقم الهاتف مطلوب.');
+      return false;
+    }
+
+    if (phoneDigits.length < 10 || phoneDigits.length > 15) {
+      toast.error('رقم الهاتف غير صحيح.');
+      return false;
+    }
+
+    if (email) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) {
+        toast.error('صيغة البريد الإلكتروني غير صحيحة.');
+        return false;
+      }
+    }
+
+    if (!governorate) {
+      toast.error('اختاري المحافظة.');
+      return false;
+    }
+
+    if (!city) {
+      toast.error('اختاري المركز/المدينة.');
+      return false;
+    }
+
+    if (!address) {
+      toast.error('العنوان بالتفصيل مطلوب.');
+      return false;
+    }
+
+    if (address.length < 10) {
+      toast.error('العنوان بالتفصيل قصير جدًا.');
+      return false;
+    }
+
+    if (!availablePaymentOptions.some((option) => option.value === form.payment)) {
+      toast.error('اختاري وسيلة دفع صحيحة.');
+      return false;
+    }
+
+    if (!isLoggedIn) {
+      if (!Array.isArray(items) || items.length === 0) {
+        toast.error('السلة فارغة. أضيفي منتجات أولاً.');
+        return false;
+      }
+
+      const invalidItem = items.find(
+        (item) => !(item.productId || item.id) || Number(item.quantity || 0) <= 0
+      );
+      if (invalidItem) {
+        toast.error('تعذر إكمال الطلب: يوجد منتج غير صالح في السلة.');
+        return false;
+      }
+    }
+
+    return true;
+  };
+
   const submit = async (e) => {
     e.preventDefault();
 
@@ -247,10 +332,7 @@ export default function CheckoutPage() {
       return;
     }
 
-    if (!form.fullName || !form.phone || !form.city || !form.governorate || !form.address) return;
-
-    if (!form.email) {
-      toast.error('البريد الإلكتروني مطلوب لإرسال الطلب.');
+    if (!validateCheckoutForm()) {
       return;
     }
 

@@ -29,6 +29,19 @@ const getStatusLabel = (status) => {
   return STATUS_OPTIONS.find((s) => s.value === status)?.label || status;
 };
 
+const getPaymentLabel = (paymentMethod) => {
+  const paymentMap = {
+    COD: 'الدفع عند الاستلام',
+    WALLET: 'محفظة إلكترونية',
+    INSTAPAY: 'إنستاباي',
+    PAYMOB: 'بطاقة بنكية',
+  };
+
+  return paymentMap[paymentMethod] || paymentMethod || '-';
+};
+
+const formatCurrency = (value) => `${Number(value || 0).toFixed(2)} ج.م`;
+
 export default function AdminOrders() {
   const { data: remoteOrdersData = { items: [] }, isLoading } = useAdminOrdersQuery();
   const updateOrderStatusMutation = useAdminUpdateOrderStatusMutation();
@@ -48,16 +61,29 @@ export default function AdminOrders() {
     return sourceOrders.map((order) => ({
       id: order.id,
       orderNumber: order.orderNumber || order.id,
-      customerName: order.user?.name || order.customerName || 'عميل غير معروف',
-      email: order.user?.email || order.customerEmail || '-',
-      phone: order.user?.phone || order.customerPhone || '-',
+      customerName: order.customerName || order.user?.name || 'عميل غير معروف',
+      email: order.customerEmail || order.user?.email || '-',
+      phone: order.customerPhone || order.user?.phone || '-',
       date: order.placedAt || order.createdAt,
       status: String(order.status || '').toLowerCase(),
       total: Number(order.total || 0),
-      items: order.itemsCount || 0,
+      subtotal: Number(order.subtotal || 0),
+      shippingFee: Number(order.shippingFee || 0),
+      taxAmount: Number(order.taxAmount || 0),
+      discountAmount: Number(order.discountAmount || 0),
+      itemsCount:
+        Number(order.itemsCount || 0) ||
+        (Array.isArray(order.items)
+          ? order.items.reduce((sum, item) => sum + Number(item.quantity || 0), 0)
+          : 0),
+      items: Array.isArray(order.items) ? order.items : [],
       payment: order.paymentMethod,
       paymentProofImage: order.paymentProofImage || order.paymentResponse?.paymentProofImage || '',
-      address: [order.city, order.governorate].filter(Boolean).join('، ') || '-',
+      governorate: order.governorate || '',
+      city: order.city || '',
+      postalCode: order.postalCode || '',
+      addressLine: order.addressLine || '',
+      notes: order.notes || '',
     }));
   }, [remoteOrdersData]);
 
@@ -170,7 +196,7 @@ export default function AdminOrders() {
         {/* Orders Table */}
         <div className="bg-white dark:bg-dark-card rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[900px]">
+            <table className="w-full min-w-[1100px]">
               <thead className="bg-gray-50 dark:bg-gray-800">
                 <tr>
                   <th className="px-6 py-3 text-right text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wide">
@@ -186,7 +212,13 @@ export default function AdminOrders() {
                     الحالة
                   </th>
                   <th className="px-6 py-3 text-right text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wide">
-                    المبلغ
+                    مبلغ المنتجات
+                  </th>
+                  <th className="px-6 py-3 text-right text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wide">
+                    مبلغ الشحن
+                  </th>
+                  <th className="px-6 py-3 text-right text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wide">
+                    الإجمالي
                   </th>
                   <th className="px-6 py-3 text-right text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wide">
                     الإجراءات
@@ -196,7 +228,7 @@ export default function AdminOrders() {
               <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
                 {isLoading ? (
                   <tr>
-                    <td colSpan="6" className="py-0">
+                    <td colSpan="8" className="py-0">
                       <LoadingState text="جاري تحميل الطلبات..." />
                     </td>
                   </tr>
@@ -256,7 +288,13 @@ export default function AdminOrders() {
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap font-semibold text-gray-900 dark:text-white align-middle">
-                        {order.total} ج.م
+                        {formatCurrency(order.subtotal)}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap font-semibold text-gray-900 dark:text-white align-middle">
+                        {formatCurrency(order.shippingFee)}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap font-bold text-primary-600 dark:text-primary-400 align-middle">
+                        {formatCurrency(order.total)}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap align-middle">
                         <div className="flex items-center justify-end gap-2">
@@ -282,7 +320,7 @@ export default function AdminOrders() {
                   ))
                 ) : (
                   <tr>
-                    <td colSpan="6" className="px-6 py-8 text-center text-gray-600 dark:text-gray-400">
+                    <td colSpan="8" className="px-6 py-8 text-center text-gray-600 dark:text-gray-400">
                       لا توجد طلبات مطابقة
                     </td>
                   </tr>
@@ -295,16 +333,16 @@ export default function AdminOrders() {
 
       {/* Details Modal */}
       {isDetailsOpen && selectedOrder && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-dark-card rounded-lg max-w-2xl w-full">
-            <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-              <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
+        <div className="fixed inset-0 bg-black/50 z-50 p-3 sm:p-4 flex items-start sm:items-center justify-center overflow-y-auto hide-scrollbar">
+          <div className="bg-white dark:bg-dark-card rounded-lg w-full max-w-3xl max-h-[82vh] sm:max-h-[78vh] flex flex-col overflow-hidden">
+            <div className="px-4 sm:px-6 py-4 border-b border-gray-200 dark:border-gray-700 shrink-0">
+              <h2 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white break-words">
                 تفاصيل الطلب {selectedOrder.orderNumber}
               </h2>
             </div>
 
-            <div className="p-6 space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+            <div className="p-4 sm:p-6 space-y-4 overflow-y-auto hide-scrollbar">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <p className="text-sm text-gray-600 dark:text-gray-400">اسم العميل</p>
                   <p className="font-medium text-gray-900 dark:text-white">
@@ -332,23 +370,47 @@ export default function AdminOrders() {
                 <div>
                   <p className="text-sm text-gray-600 dark:text-gray-400">العنوان</p>
                   <p className="font-medium text-gray-900 dark:text-white">
-                    {selectedOrder.address}
+                    {selectedOrder.addressLine || '-'}
                   </p>
                 </div>
                 <div>
                   <p className="text-sm text-gray-600 dark:text-gray-400">طريقة الدفع</p>
                   <p className="font-medium text-gray-900 dark:text-white">
-                    {selectedOrder.payment}
+                    {getPaymentLabel(selectedOrder.payment)}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">المحافظة</p>
+                  <p className="font-medium text-gray-900 dark:text-white">
+                    {selectedOrder.governorate || '-'}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">المدينة / المركز</p>
+                  <p className="font-medium text-gray-900 dark:text-white">
+                    {selectedOrder.city || '-'}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">الرمز البريدي</p>
+                  <p className="font-medium text-gray-900 dark:text-white">
+                    {selectedOrder.postalCode || '-'}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">ملاحظات العميل</p>
+                  <p className="font-medium text-gray-900 dark:text-white">
+                    {selectedOrder.notes || '-'}
                   </p>
                 </div>
                 {selectedOrder.paymentProofImage ? (
-                  <div className="col-span-2">
+                  <div className="sm:col-span-2">
                     <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">صورة التحويل</p>
                     <a href={selectedOrder.paymentProofImage} target="_blank" rel="noreferrer" className="block">
                       <img
                         src={selectedOrder.paymentProofImage}
                         alt="إثبات التحويل"
-                        className="w-full max-h-80 object-contain rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900"
+                        className="w-full max-h-64 sm:max-h-80 object-contain rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900"
                       />
                     </a>
                   </div>
@@ -356,19 +418,55 @@ export default function AdminOrders() {
                 <div>
                   <p className="text-sm text-gray-600 dark:text-gray-400">عدد المنتجات</p>
                   <p className="font-medium text-gray-900 dark:text-white">
-                    {selectedOrder.items}
+                    {selectedOrder.itemsCount}
                   </p>
                 </div>
                 <div>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">إجمالي الأصناف</p>
+                  <p className="font-medium text-gray-900 dark:text-white">
+                    {selectedOrder.items.length}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">مبلغ المنتجات</p>
+                  <p className="font-bold text-gray-900 dark:text-white text-lg">
+                    {formatCurrency(selectedOrder.subtotal)}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">مبلغ الشحن</p>
+                  <p className="font-bold text-gray-900 dark:text-white text-lg">
+                    {formatCurrency(selectedOrder.shippingFee)}
+                  </p>
+                </div>
+                <div className="sm:col-span-2">
                   <p className="text-sm text-gray-600 dark:text-gray-400">المبلغ الإجمالي</p>
                   <p className="font-bold text-primary-600 dark:text-primary-400 text-lg">
-                    {selectedOrder.total} ج.م
+                    {formatCurrency(selectedOrder.total)}
                   </p>
+                </div>
+                <div className="sm:col-span-2">
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">تفاصيل المنتجات</p>
+                  <div className="rounded-lg border border-gray-200 dark:border-gray-700 divide-y divide-gray-200 dark:divide-gray-700">
+                    {selectedOrder.items.length ? (
+                      selectedOrder.items.map((item) => (
+                        <div key={item.id} className="flex items-center justify-between p-3 text-sm">
+                          <div>
+                            <p className="font-medium text-gray-900 dark:text-white">{item.productName || 'منتج'}</p>
+                            <p className="text-gray-600 dark:text-gray-400">الكمية: {item.quantity || 0}</p>
+                          </div>
+                          <p className="font-semibold text-gray-900 dark:text-white">{formatCurrency(item.totalPrice)}</p>
+                        </div>
+                      ))
+                    ) : (
+                      <p className="p-3 text-gray-600 dark:text-gray-400">لا توجد تفاصيل أصناف لهذا الطلب.</p>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
 
-            <div className="px-6 py-4 border-t border-gray-200 dark:border-gray-700 flex justify-end gap-3">
+            <div className="px-4 sm:px-6 py-4 border-t border-gray-200 dark:border-gray-700 flex flex-col-reverse sm:flex-row justify-end gap-3 shrink-0">
               <button
                 onClick={() => setIsDetailsOpen(false)}
                 className="px-6 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition"
