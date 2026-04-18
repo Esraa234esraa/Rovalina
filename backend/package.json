@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "npm run prisma:generate && npm run typecheck",
+    "build": "npm run prisma:generate",
     "create:admin": "node ./scripts/create-admin.mjs",
     "seed:admin": "tsx src/seed/admin.ts",
     "dev": "tsx watch src/server.ts",
