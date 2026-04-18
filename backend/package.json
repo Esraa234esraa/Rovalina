@@ -4,11 +4,11 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "npm run prisma:generate",
+  "build": "prisma generate && npm run typecheck",
     "create:admin": "node ./scripts/create-admin.mjs",
     "seed:admin": "tsx src/seed/admin.ts",
     "dev": "tsx watch src/server.ts",
-    "start": "node src/server.js",
+    "start": "node --import tsx src/server.ts",
     "start:railway": "npm run prisma:generate && npm run prisma:push:retry && npm start",
     "typecheck": "tsc --noEmit",
     "prisma:generate": "prisma generate --schema=./prisma/schema.prisma",
