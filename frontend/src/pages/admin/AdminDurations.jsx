@@ -196,9 +196,6 @@ export default function AdminDurations() {
                     English Name
                   </th>
                   <th className="px-6 py-3 text-right text-xs font-medium text-gray-700 dark:text-gray-300 uppercase">
-                    Slug
-                  </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-700 dark:text-gray-300 uppercase">
                     أيقونة
                   </th>
                   <th className="px-6 py-3 text-right text-xs font-medium text-gray-700 dark:text-gray-300 uppercase">
@@ -209,7 +206,7 @@ export default function AdminDurations() {
               <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
                 {isLoading ? (
                   <tr>
-                    <td colSpan="5" className="py-0">
+                    <td colSpan="4" className="py-0">
                       <LoadingState text="جاري تحميل المدد..." />
                     </td>
                   </tr>
@@ -224,9 +221,6 @@ export default function AdminDurations() {
                       </td>
                       <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">
                         {duration.nameEn || '-'}
-                      </td>
-                      <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">
-                        {duration.slug}
                       </td>
                       <td className="px-6 py-4 text-2xl">
                         {duration.icon || '-'}
@@ -259,7 +253,7 @@ export default function AdminDurations() {
                   ))
                 ) : (
                   <tr>
-                    <td colSpan="5" className="px-6 py-8 text-center text-gray-600 dark:text-gray-400">
+                    <td colSpan="4" className="px-6 py-8 text-center text-gray-600 dark:text-gray-400">
                       لا توجد مدد مطابقة
                     </td>
                   </tr>
@@ -417,7 +411,6 @@ export default function AdminDurations() {
                       <thead className="bg-gray-50 dark:bg-gray-800">
                         <tr>
                           <th className="px-4 py-3 text-right text-xs font-medium text-gray-700 dark:text-gray-300 uppercase">المنتج</th>
-                          <th className="px-4 py-3 text-right text-xs font-medium text-gray-700 dark:text-gray-300 uppercase">SKU</th>
                           <th className="px-4 py-3 text-right text-xs font-medium text-gray-700 dark:text-gray-300 uppercase">السعر</th>
                           <th className="px-4 py-3 text-right text-xs font-medium text-gray-700 dark:text-gray-300 uppercase">المخزون</th>
                           <th className="px-4 py-3 text-right text-xs font-medium text-gray-700 dark:text-gray-300 uppercase">الفئة</th>
@@ -430,7 +423,6 @@ export default function AdminDurations() {
                           durationDetails.products.map((product) => (
                             <tr key={product.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/60 transition">
                               <td className="px-4 py-3 text-sm font-medium text-gray-900 dark:text-white">{product.name}</td>
-                              <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-300">{product.sku}</td>
                               <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-300">{Number(product.price || 0)} ج.م</td>
                               <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-300">{product.stock}</td>
                               <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-300">{product.category?.name || '-'}</td>

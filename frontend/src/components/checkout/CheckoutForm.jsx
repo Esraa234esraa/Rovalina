@@ -13,7 +13,6 @@ export default function CheckoutForm({
   paymentOptions = [],
   paymentDetails = {},
   governorates = [],
-  cities = [],
   selectedGovernorateRate = 0,
   appliedShippingFee = 0,
   shippingEnabled = true,
@@ -64,30 +63,21 @@ export default function CheckoutForm({
         ))}
       </select>
 
-      <select
+      <input
         className="input"
+        placeholder="المدينة"
         value={form.city}
         onChange={(e) => setForm((p) => ({ ...p, city: e.target.value }))}
         required
-        disabled={cities.length === 0}
-      >
-        <option value="" disabled>
-          {cities.length ? 'اختاري المركز/المدينة' : 'لا توجد مراكز للمحافظة المختارة'}
-        </option>
-        {cities.map((city) => (
-          <option key={city} value={city}>
-            {city}
-          </option>
-        ))}
-      </select>
+      />
 
       {shippingEnabled && form.governorate ? (
         <div className="rounded-xl border border-surface-300 dark:border-primary-900/40 bg-surface-50 dark:bg-dark-surface p-3 text-sm text-ink-700 dark:text-secondary-200 space-y-1">
           <p>
-            رسوم شحن {form.governorate}: <span className="font-semibold">{selectedGovernorateRate} ج.م</span>
+            سعر الشحن لمحافظة {form.governorate}: <span className="font-semibold">{selectedGovernorateRate} ج.م</span>
           </p>
           <p>
-            الرسوم المطبقة على الطلب الآن:{' '}
+            سعر الشحن المطبق على الطلب الآن:{' '}
             <span className="font-semibold">{appliedShippingFee === 0 ? 'مجاني' : `${appliedShippingFee} ج.م`}</span>
           </p>
           {isFreeShippingApplied ? (

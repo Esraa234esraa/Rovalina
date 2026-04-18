@@ -1,7 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useNavigate, useParams, Link } from 'react-router-dom';
 import { Heart, Star, Minus, Plus, Send, Clock3 } from 'lucide-react';
-import { useUserStore } from '../store';
 import ProductCard from '../components/ui/ProductCard';
 import LoadingState from '../components/ui/LoadingState';
 import { useCatalogProductDetailsQuery, useCatalogProductsQuery } from '../hooks/useCatalogProducts';
@@ -9,6 +8,7 @@ import { useToast } from '../hooks/useToast';
 import { useAddToCartMutation } from '../hooks/useUserCart';
 import { useAddToWishlistMutation, useRemoveWishlistItemMutation, useWishlistCount } from '../hooks/useUserWishlist';
 import { useCreateProductReviewMutation, useProductReviewsQuery } from '../hooks/useEngagement';
+import { useStoreSettingsQuery } from '../hooks/useStoreSettings';
 
 const isCorrupted = (text) => typeof text === 'string' && (/[^\u0600-\u06FF\sa-zA-Z0-9.,:;!()\-_/]/.test(text));
 
@@ -16,13 +16,13 @@ export default function ProductDetailsPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const toast = useToast();
-  const { isLoggedIn } = useUserStore();
   const addToCartMutation = useAddToCartMutation();
   const addToWishlistMutation = useAddToWishlistMutation();
   const removeWishlistItemMutation = useRemoveWishlistItemMutation();
   const createProductReviewMutation = useCreateProductReviewMutation(id);
   const productReviewsQuery = useProductReviewsQuery(id);
   const { data: wishlistData, hasProduct } = useWishlistCount();
+  const { data: storeSettings } = useStoreSettingsQuery();
 
   const { data: product, isLoading, isError, error } = useCatalogProductDetailsQuery(id);
   const { data: relatedProductsData } = useCatalogProductsQuery({ categoryId: product?.categoryId, limit: 8 });
@@ -135,6 +135,16 @@ export default function ProductDetailsPage() {
     return [];
   }, [product, productReviewsQuery.data]);
 
+  const whatsappUrl = useMemo(() => {
+    const raw = String(storeSettings?.whatsapp || storeSettings?.storePhone || '').trim();
+    if (!raw) return 'https://wa.me/201001234567';
+    if (raw.startsWith('http://') || raw.startsWith('https://')) return raw;
+
+    const digits = raw.replace(/[^\d]/g, '');
+    if (!digits) return 'https://wa.me/201001234567';
+    return `https://wa.me/${digits}`;
+  }, [storeSettings?.whatsapp, storeSettings?.storePhone]);
+
   const averageRating = useMemo(() => {
     if (reviews.length > 0) {
       const sum = reviews.reduce((acc, review) => acc + Number(review.rating || 0), 0);
@@ -201,12 +211,6 @@ export default function ProductDetailsPage() {
     e.preventDefault();
     if (!product || !reviewForm.comment.trim()) return;
 
-    if (!isLoggedIn) {
-      toast.info('سجلي دخولك أولاً لإرسال تقييم المنتج.');
-      navigate('/login');
-      return;
-    }
-
     createProductReviewMutation.mutate(
       {
         name: reviewForm.name,
@@ -215,7 +219,7 @@ export default function ProductDetailsPage() {
       },
       {
         onSuccess: () => {
-          toast.success('تم إرسال تقييمك بنجاح.');
+          toast.success('تم إرسال تقييمك بنجاح وسيظهر بعد المراجعة.');
           setReviewForm({ name: '', rating: 5, comment: '' });
         },
         onError: (error) => {
@@ -395,7 +399,7 @@ export default function ProductDetailsPage() {
             </div>
 
             <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-              <a href="https://wa.me/201001234567" target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-2 text-green-700 font-semibold hover:text-green-800">
+              <a href={whatsappUrl} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-2 text-green-700 font-semibold hover:text-green-800">
                 <Send className="w-5 h-5" />
                 اسألي عبر WhatsApp
               </a>

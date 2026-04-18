@@ -1,9 +1,39 @@
-import { useMemo, useState } from 'react';
-import { Save, RotateCcw } from 'lucide-react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { Save, RotateCcw, ChevronDown, Check } from 'lucide-react';
 import { useAdminSettingsQuery, useAdminUpdateSettingsMutation } from '../../hooks/admin/useAdminSettings';
 import LoadingState from '../../components/ui/LoadingState';
 import { useToast } from '../../hooks/useToast';
 import { getApiErrorMessage } from '../../utils/apiMessage';
+
+const EGYPT_GOVERNORATES = [
+  'القاهرة',
+  'الجيزة',
+  'الإسكندرية',
+  'الدقهلية',
+  'البحر الأحمر',
+  'البحيرة',
+  'الفيوم',
+  'الغربية',
+  'الإسماعيلية',
+  'المنوفية',
+  'المنيا',
+  'القليوبية',
+  'الوادي الجديد',
+  'السويس',
+  'اسوان',
+  'اسيوط',
+  'بني سويف',
+  'بورسعيد',
+  'دمياط',
+  'الشرقية',
+  'جنوب سيناء',
+  'كفر الشيخ',
+  'مطروح',
+  'الأقصر',
+  'قنا',
+  'شمال سيناء',
+  'سوهاج',
+];
 
 const DEFAULT_SETTINGS = {
   storeName: 'Rovalina Lenses',
@@ -42,6 +72,120 @@ const DEFAULT_SETTINGS = {
 
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
+function GovernorateDropdown({ value, options, onChange, isOptionDisabled }) {
+  const [open, setOpen] = useState(false);
+  const [search, setSearch] = useState('');
+  const rootRef = useRef(null);
+
+  const normalizedSearch = String(search || '').trim().toLowerCase();
+  const filteredOptions = options.filter((option) => {
+    if (!normalizedSearch) return true;
+    return String(option).toLowerCase().includes(normalizedSearch);
+  });
+
+  const closeDropdown = () => {
+    setOpen(false);
+    setSearch('');
+  };
+
+  useEffect(() => {
+    if (!open) return undefined;
+
+    const handlePointerDown = (event) => {
+      if (!rootRef.current) return;
+      if (!rootRef.current.contains(event.target)) {
+        closeDropdown();
+      }
+    };
+
+    const handleEscape = (event) => {
+      if (event.key === 'Escape') {
+        closeDropdown();
+      }
+    };
+
+    document.addEventListener('mousedown', handlePointerDown);
+    document.addEventListener('touchstart', handlePointerDown);
+    document.addEventListener('keydown', handleEscape);
+
+    return () => {
+      document.removeEventListener('mousedown', handlePointerDown);
+      document.removeEventListener('touchstart', handlePointerDown);
+      document.removeEventListener('keydown', handleEscape);
+    };
+  }, [open]);
+
+  return (
+    <div ref={rootRef} className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen((current) => !current)}
+        className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-right focus:outline-none focus:ring-2 focus:ring-primary-500 flex items-center justify-between gap-2"
+      >
+        <span className={value ? '' : 'text-gray-400 dark:text-gray-500'}>
+          {value || 'اختاري المحافظة'}
+        </span>
+        <ChevronDown className={`w-4 h-4 transition ${open ? 'rotate-180' : ''}`} />
+      </button>
+
+      {open ? (
+        <div className="absolute top-full mt-1 z-20 w-full rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 shadow-xl">
+          <div className="p-2 border-b border-gray-100 dark:border-gray-800">
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="ابحثي عن المحافظة..."
+              className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+            />
+          </div>
+
+          <div className="max-h-64 overflow-y-auto py-1">
+            {filteredOptions.length === 0 ? (
+              <p className="px-3 py-2 text-sm text-gray-500 dark:text-gray-400">لا توجد نتائج مطابقة.</p>
+            ) : (
+              filteredOptions.map((option) => {
+                const selected = option === value;
+                const disabled = Boolean(isOptionDisabled?.(option));
+
+                return (
+                  <button
+                    key={option}
+                    type="button"
+                    disabled={disabled}
+                    onClick={() => {
+                      onChange(option);
+                      closeDropdown();
+                    }}
+                    className={`w-full px-3 py-2 text-sm text-right flex items-center justify-between gap-2 transition ${
+                      selected
+                        ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300'
+                        : 'text-gray-800 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800'
+                    } ${disabled ? 'opacity-40 cursor-not-allowed' : ''}`}
+                  >
+                    <span>{option}</span>
+                    {selected ? <Check className="w-4 h-4" /> : null}
+                  </button>
+                );
+              })
+            )}
+          </div>
+
+          <div className="p-2 border-t border-gray-100 dark:border-gray-800">
+            <button
+              type="button"
+              onClick={closeDropdown}
+              className="w-full px-3 py-2 text-sm rounded-md bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 transition"
+            >
+              إغلاق
+            </button>
+          </div>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 export default function AdminSettings() {
   const toast = useToast();
   const { data: remoteSettings, isLoading } = useAdminSettingsQuery();
@@ -72,7 +216,7 @@ export default function AdminSettings() {
     () => ({
       email: settings.storeEmail || '-',
       phone: settings.storePhone || '-',
-      shippingFee: Number(settings.shippingFee || 0),
+      shippingRatesCount: Array.isArray(settings.shippingRates) ? settings.shippingRates.length : 0,
       taxRate: Number(settings.taxRate || 0),
       aboutPreview: String(settings.aboutUs || '').trim().slice(0, 120),
     }),
@@ -92,7 +236,7 @@ export default function AdminSettings() {
       rateIndex === index
         ? {
             ...rate,
-            [key]: key === 'fee' ? value : value,
+            [key]: value,
           }
         : rate
     );
@@ -105,9 +249,39 @@ export default function AdminSettings() {
 
   const addShippingRate = () => {
     const currentRates = Array.isArray(settings.shippingRates) ? settings.shippingRates : [];
+    const selectedGovernorates = new Set(
+      currentRates.map((rate) => String(rate?.governorate || '').trim()).filter(Boolean)
+    );
+    const nextGovernorate = EGYPT_GOVERNORATES.find((name) => !selectedGovernorates.has(name)) || '';
+
     setDraft((current) => ({
       ...current,
-      shippingRates: [...currentRates, { governorate: '', city: '', fee: 0 }],
+      shippingRates: [...currentRates, { governorate: nextGovernorate, fee: 0 }],
+    }));
+  };
+
+  const addAllGovernorates = () => {
+    const currentRates = Array.isArray(settings.shippingRates) ? settings.shippingRates : [];
+    const ratesMap = new Map();
+
+    currentRates.forEach((rate) => {
+      const governorate = String(rate?.governorate || '').trim();
+      if (!governorate) return;
+      ratesMap.set(governorate, {
+        governorate,
+        fee: Number(rate?.fee || 0),
+      });
+    });
+
+    EGYPT_GOVERNORATES.forEach((governorate) => {
+      if (!ratesMap.has(governorate)) {
+        ratesMap.set(governorate, { governorate, fee: 0 });
+      }
+    });
+
+    setDraft((current) => ({
+      ...current,
+      shippingRates: Array.from(ratesMap.values()),
     }));
   };
 
@@ -122,7 +296,6 @@ export default function AdminSettings() {
   const validateSettings = () => {
     const storeName = String(settings.storeName || '').trim();
     const storeEmail = String(settings.storeEmail || '').trim();
-    const shippingFee = Number(settings.shippingFee);
     const freeShippingMinimum = Number(settings.freeShippingMinimum);
     const deliveryDays = Number.parseInt(String(settings.deliveryDays), 10);
     const taxRate = Number(settings.taxRate);
@@ -134,11 +307,6 @@ export default function AdminSettings() {
 
     if (!storeEmail || !emailRegex.test(storeEmail)) {
       toast.error('البريد الإلكتروني غير صحيح.');
-      return false;
-    }
-
-    if (!Number.isFinite(shippingFee) || shippingFee < 0) {
-      toast.error('رسوم الشحن يجب أن تكون رقمًا موجبًا أو صفر.');
       return false;
     }
 
@@ -171,13 +339,14 @@ export default function AdminSettings() {
       const shippingRates = Array.isArray(settings.shippingRates) ? settings.shippingRates : [];
 
       if (!shippingRates.length) {
-        toast.error('أضيفي على الأقل محافظة واحدة مع رسوم الشحن.');
+        toast.error('أضيفي على الأقل محافظة واحدة مع سعر الشحن.');
         return false;
       }
 
+      const governorates = new Set();
+
       for (const rate of shippingRates) {
         const governorate = String(rate?.governorate || '').trim();
-        const city = String(rate?.city || '').trim();
         const fee = Number(rate?.fee);
 
         if (!governorate) {
@@ -185,13 +354,14 @@ export default function AdminSettings() {
           return false;
         }
 
-        if (!city) {
-          toast.error(`اسم المركز/المدينة مطلوب داخل المحافظة ${governorate}.`);
+        if (governorates.has(governorate)) {
+          toast.error(`المحافظة ${governorate} مضافة أكثر من مرة.`);
           return false;
         }
+        governorates.add(governorate);
 
         if (!Number.isFinite(fee) || fee < 0) {
-          toast.error(`رسوم الشحن للمحافظة ${governorate} يجب أن تكون رقمًا موجبًا أو صفر.`);
+          toast.error(`سعر الشحن للمحافظة ${governorate} يجب أن يكون رقمًا موجبًا أو صفر.`);
           return false;
         }
       }
@@ -208,7 +378,7 @@ export default function AdminSettings() {
       ...settings,
       storeName: String(settings.storeName || '').trim(),
       storeEmail: String(settings.storeEmail || '').trim(),
-      shippingFee: Number(settings.shippingFee || 0),
+      shippingFee: 0,
       freeShippingMinimum: Number(settings.freeShippingMinimum || 0),
       deliveryDays: Number.parseInt(String(settings.deliveryDays || 1), 10),
       taxRate: Number(settings.taxRate || 0),
@@ -216,10 +386,9 @@ export default function AdminSettings() {
         ? settings.shippingRates
             .map((rate) => ({
               governorate: String(rate?.governorate || '').trim(),
-              city: String(rate?.city || '').trim(),
               fee: Number(rate?.fee || 0),
             }))
-            .filter((rate) => rate.governorate && rate.city)
+            .filter((rate) => rate.governorate)
         : [],
       aboutUs: String(settings.aboutUs || '').trim(),
     };
@@ -301,21 +470,12 @@ export default function AdminSettings() {
                 </div>
               </div>
 
-              <div className="bg-white dark:bg-dark-card rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+              <div className="bg-white dark:bg-dark-card rounded-lg border border-gray-200 dark:border-gray-700 overflow-visible">
                 <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
                   <h2 className="text-xl font-bold text-gray-900 dark:text-white">الشحن والضرائب</h2>
                 </div>
                 <div className="p-6 space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">رسوم الشحن</label>
-                      <input
-                        type="number"
-                        value={settings.shippingFee}
-                        onChange={(e) => handleSettingChange('shippingFee', e.target.value)}
-                        className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
-                      />
-                    </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">حد الشحن المجاني</label>
                       <input
@@ -360,41 +520,48 @@ export default function AdminSettings() {
                   <div className="rounded-xl border border-gray-200 dark:border-gray-700 p-4 space-y-4 bg-gray-50/60 dark:bg-gray-800/40">
                     <div className="flex items-center justify-between gap-3 flex-wrap">
                       <div>
-                        <h3 className="font-semibold text-gray-900 dark:text-white">أسعار الشحن حسب المحافظة والمركز</h3>
-                        <p className="text-sm text-gray-600 dark:text-gray-400">اختاري المحافظة ثم المركز/المدينة وحددي سعر الشحن لكل منطقة.</p>
+                        <h3 className="font-semibold text-gray-900 dark:text-white">أسعار الشحن حسب المحافظة فقط</h3>
+                        <p className="text-sm text-gray-600 dark:text-gray-400">اختاري المحافظة وحددي سعر الشحن لها.</p>
                       </div>
-                      <button
-                        type="button"
-                        onClick={addShippingRate}
-                        className="px-4 py-2 rounded-lg bg-primary-600 text-white hover:bg-primary-700 transition"
-                      >
-                        إضافة محافظة
-                      </button>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <button
+                          type="button"
+                          onClick={addAllGovernorates}
+                          className="px-4 py-2 rounded-lg border border-primary-200 text-primary-700 hover:bg-primary-50 transition"
+                        >
+                          إضافة كل المحافظات
+                        </button>
+                        <button
+                          type="button"
+                          onClick={addShippingRate}
+                          className="px-4 py-2 rounded-lg bg-primary-600 text-white hover:bg-primary-700 transition"
+                        >
+                          إضافة محافظة
+                        </button>
+                      </div>
                     </div>
 
                     <div className="space-y-3">
                       {(Array.isArray(settings.shippingRates) ? settings.shippingRates : []).length > 0 ? (
                         settings.shippingRates.map((rate, index) => (
-                          <div key={`shipping-rate-${index}`} className="grid grid-cols-1 md:grid-cols-[1fr_1fr_140px_auto] gap-3 items-center">
-                            <input
-                              type="text"
+                          <div key={`shipping-rate-${index}`} className="grid grid-cols-1 md:grid-cols-[1fr_160px_auto] gap-3 items-center">
+                            <GovernorateDropdown
                               value={rate?.governorate || ''}
-                              onChange={(e) => handleShippingRateChange(index, 'governorate', e.target.value)}
-                              placeholder="اسم المحافظة"
-                              className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
-                            />
-                            <input
-                              type="text"
-                              value={rate?.city || ''}
-                              onChange={(e) => handleShippingRateChange(index, 'city', e.target.value)}
-                              placeholder="اسم المركز/المدينة"
-                              className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+                              options={EGYPT_GOVERNORATES}
+                              onChange={(governorate) => handleShippingRateChange(index, 'governorate', governorate)}
+                              isOptionDisabled={(governorate) =>
+                                settings.shippingRates.some(
+                                  (item, itemIndex) =>
+                                    itemIndex !== index &&
+                                    String(item?.governorate || '').trim() === governorate
+                                )
+                              }
                             />
                             <input
                               type="number"
                               value={rate?.fee ?? 0}
                               onChange={(e) => handleShippingRateChange(index, 'fee', e.target.value)}
-                              placeholder="رسوم الشحن"
+                              placeholder="سعر الشحن"
                               className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
                             />
                             <button
@@ -599,8 +766,8 @@ export default function AdminSettings() {
                     <p className="text-gray-900 dark:text-white">{summary.phone}</p>
                   </div>
                   <div>
-                    <p className="text-gray-600 dark:text-gray-400">رسوم الشحن</p>
-                    <p className="text-gray-900 dark:text-white">{summary.shippingFee} ج.م</p>
+                    <p className="text-gray-600 dark:text-gray-400">عدد المحافظات المسعرة</p>
+                    <p className="text-gray-900 dark:text-white">{summary.shippingRatesCount}</p>
                   </div>
                   <div>
                     <p className="text-gray-600 dark:text-gray-400">نسبة الضريبة</p>

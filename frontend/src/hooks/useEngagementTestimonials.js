@@ -57,12 +57,13 @@ export const useEngagementTestimonialsQuery = () =>
       return normalized;
     },
     initialData: readTestimonialsCache,
-    staleTime: 30 * 1000,
+    initialDataUpdatedAt: 0,
+    staleTime: 0,
     gcTime: 30 * 60 * 1000,
-    refetchInterval: 15 * 1000,
+    refetchInterval: 10 * 1000,
     retry: 1,
     refetchOnWindowFocus: true,
-    refetchOnMount: true,
+    refetchOnMount: 'always',
     placeholderData: (previousData) => previousData,
   });
 

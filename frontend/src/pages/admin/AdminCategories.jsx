@@ -14,17 +14,8 @@ import { getApiErrorMessage } from '../../utils/apiMessage';
 const initialForm = {
   name: '',
   nameEn: '',
-  slug: '',
   icon: '',
 };
-
-const slugify = (value) =>
-  String(value || '')
-    .trim()
-    .toLowerCase()
-    .replace(/[^\u0600-\u06FFa-z0-9\s-]+/g, '')
-    .replace(/\s+/g, '-')
-    .replace(/-+/g, '-');
 
 export default function AdminCategories() {
   const toast = useToast();
@@ -50,8 +41,7 @@ export default function AdminCategories() {
     return categories.filter(
       (c) =>
         c.name?.toLowerCase().includes(q) ||
-        c.nameEn?.toLowerCase().includes(q) ||
-        c.slug?.toLowerCase().includes(q)
+        c.nameEn?.toLowerCase().includes(q)
     );
   }, [search, categories]);
 
@@ -64,20 +54,6 @@ export default function AdminCategories() {
       return String(category.name || '').trim().toLowerCase() === name;
     });
   }, [formData.name, categories, isEditMode, selectedCategory]);
-
-  const normalizedSlugLive = useMemo(
-    () => slugify(formData.slug || formData.name),
-    [formData.slug, formData.name]
-  );
-
-  const duplicateSlugLive = useMemo(() => {
-    if (!normalizedSlugLive) return false;
-
-    return categories.some((category) => {
-      if (isEditMode && selectedCategory && category.id === selectedCategory.id) return false;
-      return String(category.slug || '').trim().toLowerCase() === normalizedSlugLive;
-    });
-  }, [normalizedSlugLive, categories, isEditMode, selectedCategory]);
 
   const openAddModal = () => {
     setIsEditMode(false);
@@ -92,7 +68,6 @@ export default function AdminCategories() {
     setFormData({
       name: category.name || '',
       nameEn: category.nameEn || '',
-      slug: category.slug || '',
       icon: category.icon || '',
     });
     setIsModalOpen(true);
@@ -104,7 +79,6 @@ export default function AdminCategories() {
     const payload = {
       name: formData.name.trim(),
       nameEn: formData.nameEn.trim() || null,
-      slug: slugify(formData.slug || formData.name),
       icon: formData.icon.trim() || null,
     };
 
@@ -115,11 +89,6 @@ export default function AdminCategories() {
 
     if (duplicateNameLive) {
       toast.error('اسم التصنيف مستخدم بالفعل.');
-      return;
-    }
-
-    if (duplicateSlugLive) {
-      toast.error('الرابط التعريفي مستخدم بالفعل.');
       return;
     }
 
@@ -198,20 +167,19 @@ export default function AdminCategories() {
                   <th className="py-3 px-2 text-sm text-gray-700 dark:text-gray-300">الأيقونة</th>
                   <th className="py-3 px-2 text-sm text-gray-700 dark:text-gray-300">الاسم</th>
                   <th className="py-3 px-2 text-sm text-gray-700 dark:text-gray-300">الاسم (EN)</th>
-                  <th className="py-3 px-2 text-sm text-gray-700 dark:text-gray-300">Slug</th>
                   <th className="py-3 px-2 text-sm text-gray-700 dark:text-gray-300">الإجراءات</th>
                 </tr>
               </thead>
               <tbody>
                 {isLoading ? (
                   <tr>
-                    <td colSpan="5" className="py-0">
+                    <td colSpan="4" className="py-0">
                       <LoadingState text="جاري تحميل التصنيفات..." />
                     </td>
                   </tr>
                 ) : filteredRows.length === 0 ? (
                   <tr>
-                    <td colSpan="5" className="py-8 text-center text-gray-600 dark:text-gray-400">
+                    <td colSpan="4" className="py-8 text-center text-gray-600 dark:text-gray-400">
                       لا توجد تصنيفات مطابقة
                     </td>
                   </tr>
@@ -221,7 +189,6 @@ export default function AdminCategories() {
                       <td className="py-3 px-2 text-2xl">{category.icon || '📦'}</td>
                       <td className="py-3 px-2 font-medium text-gray-900 dark:text-white">{category.name}</td>
                       <td className="py-3 px-2 text-gray-600 dark:text-gray-300">{category.nameEn || '-'}</td>
-                      <td className="py-3 px-2 text-gray-500 dark:text-gray-400 font-mono">/{category.slug}</td>
                       <td className="py-3 px-2">
                         <div className="flex items-center gap-2">
                           <button
@@ -291,20 +258,6 @@ export default function AdminCategories() {
                 />
               </div>
               <div>
-                <label className="block mb-1 text-sm text-gray-700 dark:text-gray-300">Slug</label>
-                <input
-                  value={formData.slug}
-                  onChange={(e) => setFormData({ ...formData, slug: e.target.value })}
-                  placeholder="colored-lenses"
-                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white font-mono"
-                />
-                {duplicateSlugLive ? (
-                  <p className="mt-1 text-xs text-red-600 dark:text-red-400">الرابط التعريفي مستخدم بالفعل.</p>
-                ) : (
-                  <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">اختياري، ولو تركتيه فارغًا سيتم توليده تلقائيًا من الاسم.</p>
-                )}
-              </div>
-              <div>
                 <label className="block mb-1 text-sm text-gray-700 dark:text-gray-300">الأيقونة</label>
                 <input
                   value={formData.icon}
@@ -327,7 +280,7 @@ export default function AdminCategories() {
               <button
                 type="button"
                 onClick={handleSave}
-                disabled={isSaving || duplicateNameLive || duplicateSlugLive}
+                disabled={isSaving || duplicateNameLive}
                 className="px-4 py-2 rounded-lg bg-primary-600 hover:bg-primary-700 text-white disabled:opacity-50"
               >
                 {isSaving ? 'جارٍ الحفظ...' : isEditMode ? 'حفظ التعديل' : 'إضافة التصنيف'}

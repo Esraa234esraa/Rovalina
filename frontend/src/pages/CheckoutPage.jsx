@@ -68,11 +68,8 @@ export default function CheckoutPage() {
     if (subtotal >= Number(storeSettings?.freeShippingMinimum || 0)) return 0;
 
     const normalizedGovernorate = String(form.governorate || '').trim().toLowerCase();
-    const normalizedCity = String(form.city || '').trim().toLowerCase();
     const matchedRate = shippingRates.find(
-      (rate) =>
-        String(rate?.governorate || '').trim().toLowerCase() === normalizedGovernorate &&
-        String(rate?.city || '').trim().toLowerCase() === normalizedCity
+      (rate) => String(rate?.governorate || '').trim().toLowerCase() === normalizedGovernorate
     );
 
     if (matchedRate) {
@@ -80,7 +77,7 @@ export default function CheckoutPage() {
     }
 
     return Number(storeSettings?.shippingFee || 0);
-  }, [form.city, form.governorate, shippingRates, storeSettings, subtotal]);
+  }, [form.governorate, shippingRates, storeSettings, subtotal]);
 
   const tax = useMemo(
     () => (storeSettings?.enableTax ? Number(((subtotal + shipping) * Number(storeSettings?.taxRate || 0)) / 100) : 0),
@@ -158,24 +155,10 @@ export default function CheckoutPage() {
     return Array.from(unique);
   }, [shippingRates]);
 
-  const availableCities = useMemo(() => {
-    const normalizedGovernorate = String(form.governorate || '').trim().toLowerCase();
-    const unique = new Set(
-      shippingRates
-        .filter((rate) => String(rate?.governorate || '').trim().toLowerCase() === normalizedGovernorate)
-        .map((rate) => String(rate?.city || '').trim())
-        .filter(Boolean)
-    );
-    return Array.from(unique);
-  }, [form.governorate, shippingRates]);
-
   const selectedGovernorateRate = useMemo(() => {
     const normalizedGovernorate = String(form.governorate || '').trim().toLowerCase();
-    const normalizedCity = String(form.city || '').trim().toLowerCase();
     const matchedRate = shippingRates.find(
-      (rate) =>
-        String(rate?.governorate || '').trim().toLowerCase() === normalizedGovernorate &&
-        String(rate?.city || '').trim().toLowerCase() === normalizedCity
+      (rate) => String(rate?.governorate || '').trim().toLowerCase() === normalizedGovernorate
     );
 
     if (matchedRate) {
@@ -183,7 +166,7 @@ export default function CheckoutPage() {
     }
 
     return Number(storeSettings?.shippingFee || 0);
-  }, [form.city, form.governorate, shippingRates, storeSettings?.shippingFee]);
+  }, [form.governorate, shippingRates, storeSettings?.shippingFee]);
 
   useEffect(() => {
     if (!availablePaymentOptions.length) return;
@@ -207,21 +190,6 @@ export default function CheckoutPage() {
       };
     });
   }, [availableGovernorates]);
-
-  useEffect(() => {
-    if (!availableCities.length) return;
-
-    setForm((current) => {
-      if (current.city && availableCities.includes(current.city)) {
-        return current;
-      }
-
-      return {
-        ...current,
-        city: availableCities[0],
-      };
-    });
-  }, [availableCities]);
 
   const createOrderMutation = useMutation({
     mutationFn: async (payload) => {
@@ -287,7 +255,7 @@ export default function CheckoutPage() {
     }
 
     if (!city) {
-      toast.error('اختاري المركز/المدينة.');
+      toast.error('اكتبي المدينة.');
       return false;
     }
 
@@ -454,7 +422,6 @@ export default function CheckoutPage() {
           paymentDetails={paymentDetails}
           paymentRequiresProof={paymentRequiresProof}
           governorates={availableGovernorates}
-          cities={availableCities}
           selectedGovernorateRate={selectedGovernorateRate}
           appliedShippingFee={shipping}
           shippingEnabled={Boolean(storeSettings?.enableShipping)}

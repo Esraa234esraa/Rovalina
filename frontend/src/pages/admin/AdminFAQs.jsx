@@ -6,11 +6,8 @@ import LoadingState from '../../components/ui/LoadingState';
 
 const initialFormState = {
   category: '',
-  categoryEn: '',
   question: '',
-  questionEn: '',
   answer: '',
-  answerEn: '',
   order: 0,
   isActive: true,
 };
@@ -58,7 +55,13 @@ export default function AdminFAQPage() {
   const handleOpenModal = (faq = null) => {
     if (faq) {
       setEditingId(faq.id);
-      setFormData(faq);
+      setFormData({
+        category: faq.category || '',
+        question: faq.question || '',
+        answer: faq.answer || '',
+        order: Number(faq.order || 0),
+        isActive: Boolean(faq.isActive),
+      });
     } else {
       setEditingId(null);
       setFormData(initialFormState);
@@ -80,13 +83,21 @@ export default function AdminFAQPage() {
       return;
     }
 
+    const payload = {
+      category: String(formData.category || '').trim(),
+      question: String(formData.question || '').trim(),
+      answer: String(formData.answer || '').trim(),
+      order: Number(formData.order || 0),
+      isActive: Boolean(formData.isActive),
+    };
+
     try {
       toast.info(editingId ? 'جارٍ تحديث السؤال...' : 'جارٍ إنشاء السؤال...');
       if (editingId) {
-        await updateMutation.mutateAsync({ id: editingId, payload: formData });
+        await updateMutation.mutateAsync({ id: editingId, payload });
         toast.success('تم تحديث السؤال بنجاح.');
       } else {
-        await createMutation.mutateAsync(formData);
+        await createMutation.mutateAsync(payload);
         toast.success('تم إنشاء السؤال بنجاح.');
       }
       handleCloseModal();
@@ -236,16 +247,6 @@ export default function AdminFAQPage() {
                       className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
                     />
                   </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">الفئة (إنجليزي)</label>
-                    <input
-                      type="text"
-                      value={formData.categoryEn}
-                      onChange={(e) => setFormData({ ...formData, categoryEn: e.target.value })}
-                      placeholder="Category in English"
-                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
-                    />
-                  </div>
                 </div>
 
                 <div>
@@ -260,33 +261,11 @@ export default function AdminFAQPage() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">السؤال (إنجليزي)</label>
-                  <input
-                    type="text"
-                    value={formData.questionEn}
-                    onChange={(e) => setFormData({ ...formData, questionEn: e.target.value })}
-                    placeholder="Question in English"
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
-                  />
-                </div>
-
-                <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">الإجابة *</label>
                   <textarea
                     value={formData.answer}
                     onChange={(e) => setFormData({ ...formData, answer: e.target.value })}
                     placeholder="اكتب الإجابة"
-                    rows="4"
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">الإجابة (إنجليزي)</label>
-                  <textarea
-                    value={formData.answerEn}
-                    onChange={(e) => setFormData({ ...formData, answerEn: e.target.value })}
-                    placeholder="Answer in English"
                     rows="4"
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
                   />

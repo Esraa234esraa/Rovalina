@@ -11,15 +11,19 @@ export const useAdminSettingsQuery = () =>
     queryFn: async () => {
       const response = await adminApi.getSettings();
       const settings = response.data.data || {};
-      const shippingRates = Array.isArray(settings.shippingRates)
-        ? settings.shippingRates
-            .map((rate) => ({
-              governorate: String(rate?.governorate || rate?.name || '').trim(),
-              city: String(rate?.city || rate?.center || rate?.district || '').trim(),
-              fee: Number(rate?.fee ?? rate?.shippingFee ?? rate?.price ?? 0),
-            }))
-            .filter((rate) => rate.governorate && rate.city)
-        : [];
+      const ratesSource = Array.isArray(settings.shippingRates) ? settings.shippingRates : [];
+      const shippingRatesMap = new Map();
+
+      ratesSource.forEach((rate) => {
+        const governorate = String(rate?.governorate || rate?.name || '').trim();
+        if (!governorate) return;
+        shippingRatesMap.set(governorate, {
+          governorate,
+          fee: Number(rate?.fee ?? rate?.shippingFee ?? rate?.price ?? 0),
+        });
+      });
+
+      const shippingRates = Array.from(shippingRatesMap.values());
 
       return {
         ...settings,

@@ -516,7 +516,7 @@ export default function AdminOffers() {
                 >
                   {productOptions.map((product) => (
                     <option key={product.id} value={product.id}>
-                      {product.name} ({product.sku})
+                      {product.name}
                     </option>
                   ))}
                 </select>

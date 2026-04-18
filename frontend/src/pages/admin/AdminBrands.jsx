@@ -13,17 +13,8 @@ import { getApiErrorMessage } from '../../utils/apiMessage';
 
 const initialForm = {
   name: '',
-  slug: '',
   logoUrl: '',
 };
-
-const slugify = (value) =>
-  String(value || '')
-    .trim()
-    .toLowerCase()
-    .replace(/[^\u0600-\u06FFa-z0-9\s-]+/g, '')
-    .replace(/\s+/g, '-')
-    .replace(/-+/g, '-');
 
 export default function AdminBrands() {
   const toast = useToast();
@@ -46,8 +37,7 @@ export default function AdminBrands() {
     const q = search.toLowerCase();
     return rows.filter(
       (b) =>
-        b.name?.toLowerCase().includes(q) ||
-        b.slug?.toLowerCase().includes(q)
+        b.name?.toLowerCase().includes(q)
     );
   }, [search, rows]);
 
@@ -63,7 +53,6 @@ export default function AdminBrands() {
     setSelectedBrand(brand);
     setFormData({
       name: brand.name || '',
-      slug: brand.slug || '',
       logoUrl: brand.logoUrl || '',
     });
     setIsModalOpen(true);
@@ -73,7 +62,6 @@ export default function AdminBrands() {
     if (isMutating) return;
 
     const name = String(formData.name || '').trim();
-    const slug = slugify(formData.slug || formData.name);
     const logoUrl = String(formData.logoUrl || '').trim();
 
     if (!name) {
@@ -83,20 +71,16 @@ export default function AdminBrands() {
 
     const duplicateBrand = rows.find((brand) => {
       if (isEditMode && selectedBrand && brand.id === selectedBrand.id) return false;
-      return (
-        String(brand.name || '').trim().toLowerCase() === name.toLowerCase() ||
-        String(brand.slug || '').trim().toLowerCase() === slug.toLowerCase()
-      );
+      return String(brand.name || '').trim().toLowerCase() === name.toLowerCase();
     });
 
     if (duplicateBrand) {
-      toast.error('يوجد علامة تجارية بنفس الاسم أو الرابط التعريفي.');
+      toast.error('يوجد علامة تجارية بنفس الاسم.');
       return;
     }
 
     const payload = {
       name,
-      slug,
       logoUrl: logoUrl || null,
     };
 
@@ -171,20 +155,19 @@ export default function AdminBrands() {
                 <tr className="text-right border-b border-gray-200 dark:border-gray-700">
                   <th className="py-3 px-2 text-sm text-gray-700 dark:text-gray-300">الشعار</th>
                   <th className="py-3 px-2 text-sm text-gray-700 dark:text-gray-300">الاسم</th>
-                  <th className="py-3 px-2 text-sm text-gray-700 dark:text-gray-300">Slug</th>
                   <th className="py-3 px-2 text-sm text-gray-700 dark:text-gray-300">الإجراءات</th>
                 </tr>
               </thead>
               <tbody>
                 {isLoading ? (
                   <tr>
-                    <td colSpan="4" className="py-0">
+                    <td colSpan="3" className="py-0">
                       <LoadingState text="جاري تحميل العلامات التجارية..." />
                     </td>
                   </tr>
                 ) : filteredRows.length === 0 ? (
                   <tr>
-                    <td colSpan="4" className="py-8 text-center text-gray-600 dark:text-gray-400">
+                    <td colSpan="3" className="py-8 text-center text-gray-600 dark:text-gray-400">
                       لا توجد علامات تجارية مطابقة
                     </td>
                   </tr>
@@ -203,7 +186,6 @@ export default function AdminBrands() {
                         )}
                       </td>
                       <td className="py-3 px-2 font-medium text-gray-900 dark:text-white">{brand.name}</td>
-                      <td className="py-3 px-2 text-gray-500 dark:text-gray-400 font-mono">/{brand.slug}</td>
                       <td className="py-3 px-2">
                         <div className="flex items-center gap-2">
                           <button
@@ -260,16 +242,6 @@ export default function AdminBrands() {
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
                 />
-              </div>
-              <div>
-                <label className="block mb-1 text-sm text-gray-700 dark:text-gray-300">Slug</label>
-                <input
-                  value={formData.slug}
-                  onChange={(e) => setFormData({ ...formData, slug: e.target.value })}
-                  placeholder="freshlook"
-                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white font-mono"
-                />
-                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">اختياري، ولو تركتيه فارغًا سيتم توليده تلقائيًا من الاسم.</p>
               </div>
               <div>
                 <label className="block mb-1 text-sm text-gray-700 dark:text-gray-300">رابط الشعار (اختياري)</label>

@@ -279,7 +279,7 @@ export default function UserDashboardPage() {
                       <div className="space-y-1 text-xs text-ink-600 dark:text-secondary-300">
                         {(order.items || []).slice(0, 3).map((item) => (
                           <p key={item.id}>
-                            {item.productName || item.productSku || 'منتج'} x {item.quantity}
+                            {item.productName || 'منتج'} x {item.quantity}
                           </p>
                         ))}
                         {(order.items || []).length > 3 && (

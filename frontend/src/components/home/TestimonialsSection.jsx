@@ -60,11 +60,6 @@ export default function TestimonialsSection() {
     );
   };
 
-  const readable = (ar, en, fallback = '') => {
-    if (typeof ar === 'string' && !/[A-Za-z][\^?.",]/.test(ar)) return ar;
-    return en || fallback;
-  };
-
   const containerVariants = {
     hidden: { opacity: 0 },
     visible: {
@@ -247,22 +242,19 @@ export default function TestimonialsSection() {
 
                     {/* Quote */}
                     <p className="font-arabic text-gray-700 dark:text-gray-300 mb-6 leading-relaxed flex-grow break-words">
-                      "{readable(testimonial.quote, testimonial.quoteEn, 'تجربة ممتازة وخدمة رائعة.')}"
+                      "{testimonial.quote || 'تجربة ممتازة وخدمة رائعة.'}"
                     </p>
 
                     {/* Author */}
                     <div className="flex items-center gap-4 pt-4 border-t border-gray-200 dark:border-gray-700">
                       <div className="w-12 h-12 rounded-full flex-shrink-0 border border-gray-200 dark:border-gray-700 bg-gradient-to-br from-primary-500 via-primary-600 to-slate-900 text-white flex items-center justify-center shadow-sm">
                         <span className="text-sm font-bold tracking-wide">
-                          {getInitials(readable(testimonial.name, testimonial.nameEn, 'عميل'))}
+                          {getInitials(testimonial.name || 'عميل')}
                         </span>
                       </div>
                       <div className="min-w-0">
                         <p className="font-arabic font-bold text-gray-900 dark:text-white text-sm">
-                          {readable(testimonial.name, testimonial.nameEn, 'عميل')}
-                        </p>
-                        <p className="text-xs text-gray-500 dark:text-gray-400 break-all">
-                          {testimonial.nameEn}
+                          {testimonial.name || 'عميل'}
                         </p>
                       </div>
                     </div>

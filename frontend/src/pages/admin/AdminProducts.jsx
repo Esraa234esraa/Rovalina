@@ -48,12 +48,12 @@ export default function AdminProducts() {
   const [formData, setFormData] = useState({
     nameEn: '',
     name: '',
+    description: '',
     price: '',
     originalPrice: '',
     categoryId: '',
     durationId: '',
     stock: '',
-    sku: '',
     brandId: '',
     status: 'active',
     featured: false,
@@ -89,10 +89,10 @@ export default function AdminProducts() {
             : product.originalPrice && Number(product.originalPrice) > Number(product.price || 0)
             ? Math.round(((Number(product.originalPrice) - Number(product.price || 0)) / Number(product.originalPrice)) * 100)
             : 0,
+        description: product.description || '',
         categoryId: product.categoryId || '',
         category: product.category?.name || '',
         stock: product.stock || 0,
-        sku: product.sku,
         brandId: product.brandId || '',
         durationId: product.durationId || '',
         supplier: product.brand?.name || '',
@@ -107,8 +107,7 @@ export default function AdminProducts() {
   const filteredProducts = useMemo(() => products.filter((p) => {
     const matchesSearch =
       p.name.includes(searchTerm) ||
-      p.nameEn.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      p.sku.includes(searchTerm);
+      p.nameEn.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus =
       filterStatus === 'all' || p.status === filterStatus;
     return matchesSearch && matchesStatus;
@@ -122,15 +121,6 @@ export default function AdminProducts() {
       : productName.toLowerCase().replace(/[^\u0600-\u06FFa-z0-9]+/g, '-');
     return generated.replace(/^-+|-+$/g, '');
   }, [formData.name, formData.nameEn]);
-
-  const isDuplicateSkuLive = useMemo(() => {
-    const normalizedSku = String(formData.sku || '').trim().toLowerCase();
-    if (!normalizedSku) return false;
-    return products.some((p) => {
-      if (isEditMode && selectedProduct && p.id === selectedProduct.id) return false;
-      return String(p.sku || '').trim().toLowerCase() === normalizedSku;
-    });
-  }, [formData.sku, products, isEditMode, selectedProduct]);
 
   const isDuplicateSlugLive = useMemo(() => {
     if (!liveSlug) return false;
@@ -154,12 +144,12 @@ export default function AdminProducts() {
     setFormData({
       nameEn: '',
       name: '',
+      description: '',
       price: '',
       originalPrice: '',
       categoryId: '',
       durationId: '',
       stock: '',
-      sku: '',
       brandId: '',
       status: 'active',
       featured: false,
@@ -176,12 +166,12 @@ export default function AdminProducts() {
     setFormData({
       nameEn: product.nameEn,
       name: product.name,
+      description: product.description || '',
       price: product.price,
       originalPrice: product.originalPrice,
       categoryId: product.categoryId,
       durationId: product.durationId || '',
       stock: product.stock,
-      sku: product.sku,
       brandId: product.brandId,
       status: product.status,
       featured: product.featured || false,
@@ -224,14 +214,10 @@ export default function AdminProducts() {
 
     const productName = String(formData.name || '').trim();
     const productNameEn = String(formData.nameEn || '').trim();
-    const productSku = String(formData.sku || '').trim();
+    const productDescription = String(formData.description || '').trim();
 
     if (!productName) {
       toast.error('اسم المنتج بالعربية مطلوب.');
-      return;
-    }
-    if (!productSku) {
-      toast.error('رمز المنتج SKU مطلوب.');
       return;
     }
     if (!formData.categoryId) {
@@ -256,21 +242,11 @@ export default function AdminProducts() {
       return;
     }
 
-    const normalizedSku = productSku.toLowerCase();
     const generatedSlug =
       productNameEn
         ? productNameEn.toLowerCase().replace(/[^a-z0-9]+/g, '-')
         : productName.toLowerCase().replace(/[^\u0600-\u06FFa-z0-9]+/g, '-');
     const normalizedSlug = generatedSlug.replace(/^-+|-+$/g, '');
-
-    const conflictingProduct = products.find((p) => {
-      if (isEditMode && selectedProduct && p.id === selectedProduct.id) return false;
-      return String(p.sku || '').trim().toLowerCase() === normalizedSku;
-    });
-    if (conflictingProduct) {
-      toast.error('رمز المنتج SKU مستخدم بالفعل، اختاري رمز مختلف.');
-      return;
-    }
 
     const conflictingSlugProduct = products.find((p) => {
       if (isEditMode && selectedProduct && p.id === selectedProduct.id) return false;
@@ -298,6 +274,7 @@ export default function AdminProducts() {
     const payload = {
       name: productName,
       nameEn: productNameEn,
+      description: productDescription || null,
       slug: normalizedSlug,
       price: currentPrice,
       originalPrice: originalPriceValue,
@@ -309,7 +286,6 @@ export default function AdminProducts() {
       durationId: formData.durationId || null,
       brandId: formData.brandId || null,
       stock: Number(formData.stock),
-      sku: productSku,
       status: formData.status === 'active' ? 'ACTIVE' : 'INACTIVE',
       image: mainImage,
       featured: Boolean(formData.featured),
@@ -509,7 +485,7 @@ export default function AdminProducts() {
             <Search className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
             <input
               type="text"
-              placeholder="ابحث بالاسم أو SKU..."
+              placeholder="ابحث بالاسم..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full pl-10 pr-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-dark-card text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
@@ -536,9 +512,6 @@ export default function AdminProducts() {
                     المنتج
                   </th>
                   <th className="px-6 py-3 text-right text-xs font-medium text-gray-700 dark:text-gray-300 uppercase">
-                    SKU
-                  </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-700 dark:text-gray-300 uppercase">
                     السعر
                   </th>
                   <th className="px-6 py-3 text-right text-xs font-medium text-gray-700 dark:text-gray-300 uppercase">
@@ -558,7 +531,7 @@ export default function AdminProducts() {
               <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
                 {isProductsLoading ? (
                   <tr>
-                    <td colSpan="7" className="py-0">
+                    <td colSpan="6" className="py-0">
                       <LoadingState text="جاري تحميل المنتجات..." />
                     </td>
                   </tr>
@@ -584,9 +557,6 @@ export default function AdminProducts() {
                             </p>
                           </div>
                         </div>
-                      </td>
-                      <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">
-                        {product.sku}
                       </td>
                       <td className="px-6 py-4 font-semibold text-gray-900 dark:text-white">
                         <div>
@@ -650,7 +620,7 @@ export default function AdminProducts() {
                   ))
                 ) : (
                   <tr>
-                    <td colSpan="7" className="px-6 py-8 text-center text-gray-600 dark:text-gray-400">
+                    <td colSpan="6" className="px-6 py-8 text-center text-gray-600 dark:text-gray-400">
                       لا توجد منتجات مطابقة
                     </td>
                   </tr>
@@ -739,6 +709,18 @@ export default function AdminProducts() {
                     <p className="mt-1 text-xs text-red-600 dark:text-red-400">هذا الـ slug مستخدم بالفعل.</p>
                   ) : null}
                 </div>
+                <div className="md:col-span-2 xl:col-span-3">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    وصف المنتج
+                  </label>
+                  <textarea
+                    rows="4"
+                    value={formData.description}
+                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                    placeholder="اكتبي وصفًا مختصرًا للمنتج..."
+                    className={MINT_INPUT_CLASS}
+                  />
+                </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     السعر الحالي
@@ -811,22 +793,6 @@ export default function AdminProducts() {
                     }
                     className={MINT_INPUT_CLASS}
                   />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    SKU
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.sku}
-                    onChange={(e) =>
-                      setFormData({ ...formData, sku: e.target.value })
-                    }
-                    className={MINT_INPUT_CLASS}
-                  />
-                  {isDuplicateSkuLive ? (
-                    <p className="mt-1 text-xs text-red-600 dark:text-red-400">هذا الـ SKU مستخدم بالفعل.</p>
-                  ) : null}
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -1122,7 +1088,7 @@ export default function AdminProducts() {
               </button>
               <button
                 onClick={handleSave}
-                disabled={isSaving || isSubmitting || isDuplicateSkuLive || isDuplicateSlugLive}
+                disabled={isSaving || isSubmitting || isDuplicateSlugLive}
                 className="w-full sm:w-auto px-6 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg transition"
               >
                 {isSaving || isSubmitting ? 'جارٍ الحفظ...' : isEditMode ? 'حفظ التعديلات' : 'إضافة المنتج'}
@@ -1173,9 +1139,9 @@ export default function AdminProducts() {
                         <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">الاسم بالإنجليزية</p>
                         <p className="font-semibold text-gray-900 dark:text-white">{productDetails.nameEn || '-'}</p>
                       </div>
-                      <div className="p-4 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
-                        <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">SKU</p>
-                        <p className="font-semibold text-gray-900 dark:text-white">{productDetails.sku || '-'}</p>
+                      <div className="p-4 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 md:col-span-2">
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">الوصف</p>
+                        <p className="font-semibold text-gray-900 dark:text-white whitespace-pre-line">{productDetails.description || '-'}</p>
                       </div>
                       <div className="p-4 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
                         <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">الحالة</p>

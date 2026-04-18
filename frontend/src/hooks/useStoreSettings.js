@@ -21,13 +21,19 @@ const normalizeSettings = (settings) => {
     source.instapay ||
     '';
   const shippingRates = Array.isArray(source.shippingRates)
-    ? source.shippingRates
-        .map((rate) => ({
-          governorate: String(rate?.governorate || rate?.name || '').trim(),
-          city: String(rate?.city || rate?.center || rate?.district || '').trim(),
-          fee: Number(rate?.fee ?? rate?.shippingFee ?? rate?.price ?? 0),
-        }))
-        .filter((rate) => rate.governorate && rate.city)
+    ? Array.from(
+        source.shippingRates.reduce((acc, rate) => {
+          const governorate = String(rate?.governorate || rate?.name || '').trim();
+          if (!governorate) return acc;
+
+          acc.set(governorate, {
+            governorate,
+            fee: Number(rate?.fee ?? rate?.shippingFee ?? rate?.price ?? 0),
+          });
+
+          return acc;
+        }, new Map()).values()
+      )
     : [];
 
   return {
