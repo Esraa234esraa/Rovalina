@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "npm run prisma:generate",
+  "build": "tsc",
     "create:admin": "node ./scripts/create-admin.mjs",
     "seed:admin": "tsx src/seed/admin.ts",
     "dev": "tsx watch src/server.ts",
@@ -42,6 +42,5 @@
     "typescript": "^5.8.2"
   },
   "prisma": {
-  "engineType": "binary"
 }
 }
