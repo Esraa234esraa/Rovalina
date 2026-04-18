@@ -14,7 +14,9 @@
     "resolveJsonModule": true,
     "forceConsistentCasingInFileNames": true,
     "skipLibCheck": true,
-    "noEmit": true,
+    "noEmit": false,
+    "outDir": "./dist",
+    "rootDir": "./src",
     "types": [
       "node"
     ]
