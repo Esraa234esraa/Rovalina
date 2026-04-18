@@ -53,6 +53,12 @@ const ensureCategorySlug = ({ slug, name }) => {
   return normalized || `category-${Date.now()}`;
 };
 
+const ensureProductSku = ({ sku, slug, name, nameEn }) => {
+  const normalized = slugifyText(sku || slug || nameEn || name).replace(/^-+|-+$/g, '');
+  const prefix = normalized || 'product';
+  return `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`.toUpperCase();
+};
+
 const normalizeInstagramImageUrl = (value) => {
   const raw = String(value || '').trim();
   if (!raw) return '';
@@ -92,13 +98,19 @@ const SETTINGS_JSON_KEYS = ['shippingRates'];
 
 const normalizeShippingRates = (value) => {
   const source = Array.isArray(value) ? value : [];
-  return source
-    .map((rate) => ({
-      governorate: String(rate?.governorate || '').trim(),
-      city: String(rate?.city || rate?.center || rate?.district || '').trim(),
+  const map = new Map();
+
+  source.forEach((rate) => {
+    const governorate = String(rate?.governorate || rate?.name || '').trim();
+    if (!governorate) return;
+
+    map.set(governorate, {
+      governorate,
       fee: Number(rate?.fee ?? rate?.shippingFee ?? rate?.price ?? 0),
-    }))
-    .filter((rate) => rate.governorate && rate.city);
+    });
+  });
+
+  return Array.from(map.values());
 };
 
 const SETTINGS_STRING_KEYS = [
@@ -396,21 +408,14 @@ export const adminService = {
     return prisma.category.create({
       data: {
         ...data,
-        slug: ensureCategorySlug({ slug: data?.slug, name: data?.name }),
+        slug: ensureCategorySlug({ name: data?.name }),
       },
     });
   },
 
   updateCategory(id, data) {
     const payload = { ...data };
-
-    if (Object.prototype.hasOwnProperty.call(payload, 'slug') && !String(payload.slug || '').trim()) {
-      payload.slug = ensureCategorySlug({ slug: payload.slug, name: payload.name });
-    }
-
-    if (!Object.prototype.hasOwnProperty.call(payload, 'slug') && payload.name) {
-      payload.slug = ensureCategorySlug({ name: payload.name });
-    }
+    delete payload.slug;
 
     return prisma.category.update({ where: { id }, data: payload });
   },
@@ -423,20 +428,14 @@ export const adminService = {
     return prisma.brand.create({
       data: {
         ...data,
-        slug: ensureBrandSlug({ slug: data?.slug, name: data?.name }),
+        slug: ensureBrandSlug({ name: data?.name }),
       },
     });
   },
 
   updateBrand(id, data) {
     const payload = { ...data };
-    if (Object.prototype.hasOwnProperty.call(payload, 'slug') && !String(payload.slug || '').trim()) {
-      payload.slug = ensureBrandSlug({ slug: payload.slug, name: payload.name });
-    }
-
-    if (!Object.prototype.hasOwnProperty.call(payload, 'slug') && payload.name) {
-      payload.slug = ensureBrandSlug({ name: payload.name });
-    }
+    delete payload.slug;
 
     return prisma.brand.update({ where: { id }, data: payload });
   },
@@ -452,6 +451,7 @@ export const adminService = {
     return prisma.product.create({
       data: {
         ...productData,
+        sku: ensureProductSku(productData),
         ...(colorVariants.length
           ? {
               colorVariants: {
@@ -821,11 +821,8 @@ export const adminService = {
     return prisma.fAQ.create({
       data: {
         question: String(question).trim(),
-        questionEn: data.questionEn ? String(data.questionEn).trim() : null,
         answer: String(answer).trim(),
-        answerEn: data.answerEn ? String(data.answerEn).trim() : null,
         category: String(category).trim(),
-        categoryEn: data.categoryEn ? String(data.categoryEn).trim() : null,
         order: Number(data.order) || 0,
         isActive: data.isActive !== false,
       },
@@ -838,20 +835,11 @@ export const adminService = {
     if (Object.prototype.hasOwnProperty.call(data, 'question')) {
       updateData.question = String(data.question).trim();
     }
-    if (Object.prototype.hasOwnProperty.call(data, 'questionEn')) {
-      updateData.questionEn = data.questionEn ? String(data.questionEn).trim() : null;
-    }
     if (Object.prototype.hasOwnProperty.call(data, 'answer')) {
       updateData.answer = String(data.answer).trim();
     }
-    if (Object.prototype.hasOwnProperty.call(data, 'answerEn')) {
-      updateData.answerEn = data.answerEn ? String(data.answerEn).trim() : null;
-    }
     if (Object.prototype.hasOwnProperty.call(data, 'category')) {
       updateData.category = String(data.category).trim();
-    }
-    if (Object.prototype.hasOwnProperty.call(data, 'categoryEn')) {
-      updateData.categoryEn = data.categoryEn ? String(data.categoryEn).trim() : null;
     }
     if (Object.prototype.hasOwnProperty.call(data, 'order')) {
       updateData.order = Number(data.order);

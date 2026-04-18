@@ -99,6 +99,7 @@ export const engagementService = {
         name,
         rating: Number(rating),
         comment,
+        isApproved: false,
       },
     });
   },

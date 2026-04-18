@@ -12,13 +12,19 @@ const normalizeText = (value) =>
 const normalizeShippingRates = (settings) => {
   const rates = settings?.shippingRates;
   if (Array.isArray(rates)) {
-    return rates
-      .map((rate) => ({
-        governorate: String(rate?.governorate || rate?.name || '').trim(),
-        city: String(rate?.city || rate?.center || rate?.district || '').trim(),
+    const map = new Map();
+
+    rates.forEach((rate) => {
+      const governorate = String(rate?.governorate || rate?.name || '').trim();
+      if (!governorate) return;
+
+      map.set(governorate, {
+        governorate,
         fee: Number(rate?.fee ?? rate?.shippingFee ?? rate?.price ?? 0),
-      }))
-      .filter((rate) => rate.governorate && rate.city);
+      });
+    });
+
+    return Array.from(map.values());
   }
 
   if (rates && typeof rates === 'object') {
@@ -43,12 +49,9 @@ const resolveShippingFee = (settings, subtotal, governorate, city, fallbackShipp
   }
 
   const normalizedGovernorate = normalizeText(governorate);
-  const normalizedCity = normalizeText(city);
   const shippingRates = normalizeShippingRates(settings);
   const matchedRate = shippingRates.find(
-    (rate) =>
-      normalizeText(rate.governorate) === normalizedGovernorate &&
-      normalizeText(rate.city) === normalizedCity
+    (rate) => normalizeText(rate.governorate) === normalizedGovernorate
   );
 
   if (matchedRate) {

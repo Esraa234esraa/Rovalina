@@ -295,7 +295,7 @@ model ProductReview {
   name       String?
   rating     Int
   comment    String
-  isApproved Boolean  @default(true)
+  isApproved Boolean  @default(false)
   product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
   user       User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
   createdAt  DateTime @default(now())

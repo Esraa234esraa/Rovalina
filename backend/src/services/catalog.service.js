@@ -38,13 +38,19 @@ const DEFAULT_PUBLIC_SETTINGS = {
 
 const normalizeShippingRates = (value) => {
   const source = Array.isArray(value) ? value : [];
-  return source
-    .map((rate) => ({
-      governorate: String(rate?.governorate || '').trim(),
-      city: String(rate?.city || rate?.center || rate?.district || '').trim(),
+  const map = new Map();
+
+  source.forEach((rate) => {
+    const governorate = String(rate?.governorate || rate?.name || '').trim();
+    if (!governorate) return;
+
+    map.set(governorate, {
+      governorate,
       fee: Number(rate?.fee ?? rate?.shippingFee ?? rate?.price ?? 0),
-    }))
-    .filter((rate) => rate.governorate && rate.city);
+    });
+  });
+
+  return Array.from(map.values());
 };
 
 const normalizePublicSettings = (raw) => {
@@ -127,7 +133,6 @@ export const catalogService = {
               { name: { contains: search, mode: 'insensitive' } },
               { nameEn: { contains: search, mode: 'insensitive' } },
               { description: { contains: search, mode: 'insensitive' } },
-              { sku: { contains: search, mode: 'insensitive' } },
             ],
           }
         : {}),

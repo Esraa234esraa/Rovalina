@@ -167,7 +167,7 @@ export const deleteDuration = asyncHandler(async (req, res) => {
 });
 
 export const createProduct = asyncHandler(async (req, res) => {
-  const required = ['name', 'slug', 'price', 'sku', 'categoryId'];
+  const required = ['name', 'slug', 'price', 'categoryId'];
   for (const key of required) {
     if (!req.body[key]) throw new ApiError(400, `${key} is required`);
   }
