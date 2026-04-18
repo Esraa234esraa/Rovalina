@@ -3,6 +3,7 @@ import cors from 'cors';
 import morgan from 'morgan';
 import routes from './routes/index.js';
 import { errorHandler, notFound } from './middleware/error.js';
+import { Request, Response } from "express";
 
 const app = express();
 
@@ -32,7 +33,7 @@ app.use(express.json({ limit: '2mb' }));
 app.use(express.urlencoded({ extended: true }));
 app.use(morgan(process.env.NODE_ENV === 'production' ? 'combined' : 'dev'));
 
-app.get('/health', (_req, res) => {
+app.get('/health', (req: Request, res: Response) => {
   res.json({ success: true, message: 'Backend is running' });
 });
 
