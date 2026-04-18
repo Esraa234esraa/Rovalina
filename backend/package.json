@@ -3,6 +3,9 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
+  "engines": {
+    "node": "20.x"
+  },
   "scripts": {
     "build": "npm run prisma:generate",
     "create:admin": "node ./scripts/create-admin.mjs",
