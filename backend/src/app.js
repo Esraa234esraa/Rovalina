@@ -7,14 +7,27 @@ import { sendWhatsAppMessage } from './services/whatsapp.service.js';
 
 const app = express();
 
-app.use(cors({
-  origin: [
-    "http://localhost:5173",
-    "https://mistyrose-dunlin-772686.hostingersite.com"
-  ],
-  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-  credentials: true
-}));
+const allowedOrigins = [
+  'http://localhost:5173',
+  'https://mistyrose-dunlin-772686.hostingersite.com',
+  'https://rovalina-production.up.railway.app',
+];
+
+const corsOptions = {
+  origin(origin, callback) {
+    // Allow same-origin/server-side requests with no Origin header.
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.includes(origin)) return callback(null, true);
+    return callback(new Error('Not allowed by CORS'));
+  },
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true,
+  optionsSuccessStatus: 204,
+};
+
+app.use(cors(corsOptions));
+app.options('*', cors(corsOptions));
 app.use(express.json({ limit: '25mb' }));
 app.use(express.urlencoded({ extended: true, limit: '25mb' }));
 app.use(morgan('dev'));
