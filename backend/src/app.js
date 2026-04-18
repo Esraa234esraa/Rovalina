@@ -10,6 +10,7 @@ const app = express();
 const allowedOrigins = [
   'http://localhost:5173',
   'https://rovalina.store',
+  'https://www.rovalina.store',
   'https://mistyrose-dunlin-772686.hostingersite.com',
   'https://rovalina-production.up.railway.app',
 ];
