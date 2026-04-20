@@ -76,7 +76,7 @@ export default function AnimatedHero() {
   );
 
   return (
-    <div className="relative w-full min-h-screen bg-gradient-to-b from-pale-pink via-cream to-white dark:from-dark-bg dark:via-dark-surface dark:to-dark-card overflow-hidden">
+    <div className="relative w-full min-h-screen bg-gradient-to-b from-pale-pink via-cream to-white dark:from-dark-bg dark:via-dark-surface dark:to-dark-card overflow-hidden pt-6 md:pt-0">
       {/* Soft blur background circles */}
       <motion.div
         className="absolute top-10 left-10 w-72 h-72 rounded-full bg-gradient-to-br from-primary-200/20 to-rose-200/20 blur-3xl"
