@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ShoppingCart, Search, Heart, User, Menu, X, Moon, Sun, ChevronDown, Shield } from 'lucide-react';
 import { useAuthStore, useThemeStore, useUserStore } from '../../store';
@@ -13,6 +13,7 @@ export default function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [isAccountMenuOpen, setIsAccountMenuOpen] = useState(false);
+  const headerRef = useRef(null);
 
   const { isDark, toggleDarkMode } = useThemeStore();
   const { isLoggedIn, user, logoutUser } = useUserStore();
@@ -60,8 +61,25 @@ export default function Header() {
     navigate('/');
   };
 
+  useEffect(() => {
+    const setHeaderHeightVar = () => {
+      const nextHeight = headerRef.current?.offsetHeight || 0;
+      document.documentElement.style.setProperty('--user-header-height', `${nextHeight}px`);
+    };
+
+    setHeaderHeightVar();
+    window.addEventListener('resize', setHeaderHeightVar);
+
+    return () => {
+      window.removeEventListener('resize', setHeaderHeightVar);
+    };
+  }, [isMenuOpen]);
+
   return (
-    <header className="sticky top-0 z-50 bg-background-100 dark:bg-dark-card border-b border-surface-300 dark:border-primary-900/40 shadow-soft">
+    <header
+      ref={headerRef}
+      className="fixed top-0 left-0 right-0 z-50 bg-background-100 dark:bg-dark-card border-b border-surface-300 dark:border-primary-900/40 shadow-soft"
+    >
       <div className="container-fluid">
         <div className="flex items-center justify-between py-4">
           <Link to="/" className="flex items-center gap-2 group">

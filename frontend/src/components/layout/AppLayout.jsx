@@ -13,7 +13,7 @@ export default function AppLayout() {
       <ScrollToTop />
       <div className="min-h-screen flex flex-col bg-cream dark:bg-dark-bg">
         <Header />
-        <main className="flex-grow">
+        <main className="flex-grow pt-[var(--user-header-height,0px)]">
           <Outlet />
         </main>
         <Footer />
