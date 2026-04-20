@@ -79,17 +79,62 @@ export default function NotificationsDropdown() {
     };
   }, [isOpen]);
 
+  const hasLowStockNotification = useMemo(
+    () => notifications.some((notification) => String(notification?.type || '').toUpperCase() === 'LOW_STOCK'),
+    [notifications]
+  );
+
+  const getNotificationMeta = (notification) => {
+    const type = String(notification?.type || '').toUpperCase();
+    const isOrderNotification = type.startsWith('ORDER');
+    const isLowStockNotification = type === 'LOW_STOCK';
+
+    if (isLowStockNotification) {
+      return {
+        type,
+        isOrderNotification,
+        isLowStockNotification,
+        hint: `المتبقي: ${Number(notification?.data?.stock || 0)}`,
+        hintClass: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300',
+        clickPath: '/admin/products',
+      };
+    }
+
+    if (isOrderNotification) {
+      const orderNumber = notification?.data?.orderNumber || notification?.data?.orderId || 'طلب جديد';
+      return {
+        type,
+        isOrderNotification,
+        isLowStockNotification,
+        hint: `الطلب: ${orderNumber}`,
+        hintClass: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300',
+        clickPath: '/admin/orders',
+      };
+    }
+
+    return {
+      type,
+      isOrderNotification,
+      isLowStockNotification,
+      hint: type || 'NOTIFICATION',
+      hintClass: 'bg-surface-200 text-ink-700 dark:bg-dark-surface dark:text-secondary-200',
+      clickPath: '/admin/dashboard',
+    };
+  };
+
   const handleViewAllOrders = () => {
     setIsOpen(false);
-    navigate('/admin/orders');
+    navigate(hasLowStockNotification ? '/admin/products' : '/admin/orders');
   };
 
   const handleNotificationClick = async (notification) => {
     if (!notification.isRead) {
       await markReadMutation.mutateAsync(notification.id);
     }
+
+    const meta = getNotificationMeta(notification);
     setIsOpen(false);
-    navigate('/admin/orders');
+    navigate(meta.clickPath);
   };
 
   const handleDeleteNotification = async (event, notificationId) => {
@@ -142,8 +187,7 @@ export default function NotificationsDropdown() {
               </div>
             ) : notifications.length > 0 ? (
               notifications.map((notification) => {
-                const isOrderNotification = String(notification.type || '').startsWith('ORDER');
-                const orderNumber = notification.data?.orderNumber || notification.data?.orderId || 'طلب جديد';
+                const meta = getNotificationMeta(notification);
 
                 return (
                 <div
@@ -151,7 +195,9 @@ export default function NotificationsDropdown() {
                   onClick={() => handleNotificationClick(notification)}
                   role="button"
                   tabIndex={0}
-                  className="p-3 border-b border-surface-100 dark:border-dark-surface hover:bg-surface-50 dark:hover:bg-dark-surface/50 transition cursor-pointer group"
+                  className={`p-3 border-b border-surface-100 dark:border-dark-surface transition cursor-pointer group hover:bg-surface-50 dark:hover:bg-dark-surface/50 ${
+                    meta.isLowStockNotification ? 'bg-amber-50/60 dark:bg-amber-900/10' : ''
+                  }`}
                 >
                   <div className="flex justify-between items-start gap-2">
                     <div className="flex-1">
@@ -161,9 +207,9 @@ export default function NotificationsDropdown() {
                       <p className="font-arabic text-xs text-ink-600 dark:text-secondary-300 mt-1 leading-6">
                         {notification.message}
                       </p>
-                      <p className="font-arabic text-xs text-ink-500 dark:text-secondary-400 mt-1">
-                        {isOrderNotification ? `الطلب: ${orderNumber}` : notification.type}
-                      </p>
+                      <span className={`inline-flex mt-2 px-2 py-0.5 rounded-full text-[11px] font-semibold ${meta.hintClass}`}>
+                        {meta.hint}
+                      </span>
                     </div>
                     <div className="text-right">
                       <button
@@ -207,7 +253,7 @@ export default function NotificationsDropdown() {
                 onClick={handleViewAllOrders}
                 className="w-full font-arabic text-sm py-2 text-center text-primary-600 dark:text-primary-400 hover:bg-surface-50 dark:hover:bg-dark-surface rounded transition font-medium"
               >
-                عرض جميع الطلبات
+                {hasLowStockNotification ? 'عرض المنتجات منخفضة المخزون' : 'عرض جميع الطلبات'}
               </button>
             </div>
           )}
