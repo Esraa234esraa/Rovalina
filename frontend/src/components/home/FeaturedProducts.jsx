@@ -87,9 +87,8 @@ export default function FeaturedProducts() {
   useEffect(() => {
     const detectCardsPerSlide = () => {
       const width = window.innerWidth;
-      if (width < 640) return 1;
-      if (width < 1024) return 2;
-      return 3;
+      if (width < 768) return 2;
+      return 4;
     };
 
     const applyCardsPerSlide = () => {
@@ -119,7 +118,7 @@ export default function FeaturedProducts() {
 
     const timer = setInterval(() => {
       setActiveSlide((prev) => (prev + 1) % productSlides.length);
-    }, 4200);
+    }, 5000);
 
     return () => clearInterval(timer);
   }, [hasMultipleSlides, productSlides.length]);
@@ -136,6 +135,25 @@ export default function FeaturedProducts() {
   const prevSlide = () => {
     if (!hasMultipleSlides) return;
     setActiveSlide((prev) => (prev - 1 + productSlides.length) % productSlides.length);
+  };
+
+  const getSlideLabel = (slideProducts = [], index) => {
+    const firstProductName = String(slideProducts?.[0]?.name || slideProducts?.[0]?.nameEn || '').trim();
+    if (firstProductName) return firstProductName;
+    return `مجموعة ${index + 1}`;
+  };
+
+  const handleDragEnd = (_event, info) => {
+    if (!hasMultipleSlides) return;
+
+    if (info?.offset?.x <= -60) {
+      nextSlide();
+      return;
+    }
+
+    if (info?.offset?.x >= 60) {
+      prevSlide();
+    }
   };
 
   return (
@@ -171,16 +189,10 @@ export default function FeaturedProducts() {
             initial="hidden"
             whileInView="visible"
             viewport={{ once: true }}
-            className={`grid gap-6 mb-12 ${
-              cardsPerSlide === 1
-                ? 'grid-cols-1'
-                : cardsPerSlide === 2
-                ? 'grid-cols-1 sm:grid-cols-2'
-                : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3'
-            }`}
+            className={`grid gap-4 md:gap-6 mb-12 ${cardsPerSlide === 2 ? 'grid-cols-2' : 'grid-cols-2 md:grid-cols-4'}`}
           >
             {Array.from({ length: cardsPerSlide }).map((_, index) => (
-              <MotionDiv key={`skeleton-${index}`} variants={itemVariants}>
+              <MotionDiv key={`skeleton-${index}`} variants={itemVariants} className="h-full">
                 <ProductSkeletonCard />
               </MotionDiv>
             ))}
@@ -194,16 +206,14 @@ export default function FeaturedProducts() {
                 animate={{ opacity: 1, x: 0, rotateY: 0 }}
                 exit={{ opacity: 0, x: -70, rotateY: 7 }}
                 transition={{ duration: 0.55, ease: 'easeInOut' }}
-                className={`grid gap-6 ${
-                  cardsPerSlide === 1
-                    ? 'grid-cols-1'
-                    : cardsPerSlide === 2
-                    ? 'grid-cols-1 sm:grid-cols-2'
-                    : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3'
-                }`}
+                drag={hasMultipleSlides ? 'x' : false}
+                dragConstraints={{ left: 0, right: 0 }}
+                dragElastic={0.18}
+                onDragEnd={handleDragEnd}
+                className={`grid gap-4 md:gap-6 ${cardsPerSlide === 2 ? 'grid-cols-2' : 'grid-cols-2 md:grid-cols-4'}`}
               >
                 {(productSlides[activeSlide] || []).map((product, index) => (
-                  <MotionDiv key={product.id || `featured-slide-${activeSlide}-${index}`} variants={itemVariants}>
+                  <MotionDiv key={product.id || `featured-slide-${activeSlide}-${index}`} variants={itemVariants} className="h-full">
                     <Suspense fallback={<ProductSkeletonCard />}>
                       <ProductCard product={product} />
                     </Suspense>
@@ -236,17 +246,21 @@ export default function FeaturedProducts() {
         )}
 
         {hasMultipleSlides ? (
-          <div className="flex justify-center gap-2 mb-8">
-            {productSlides.map((_, index) => (
+          <div className="flex flex-wrap justify-center gap-2 mb-8">
+            {productSlides.map((slide, index) => (
               <button
                 key={`dot-${index}`}
                 type="button"
                 onClick={() => setActiveSlide(index)}
-                className={`h-2.5 rounded-full transition-all ${
-                  index === activeSlide ? 'w-8 bg-primary-600' : 'w-2.5 bg-primary-300/70'
+                className={`px-3 py-1.5 rounded-full text-xs md:text-sm transition-all ${
+                  index === activeSlide
+                    ? 'bg-primary-600 text-white'
+                    : 'bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300'
                 }`}
                 aria-label={`شريحة ${index + 1}`}
-              />
+              >
+                {getSlideLabel(slide, index)}
+              </button>
             ))}
           </div>
         ) : null}

@@ -10,6 +10,7 @@ import ConfirmDeleteModal from '../../components/admin/ConfirmDeleteModal';
 import LoadingState from '../../components/ui/LoadingState';
 import { useToast } from '../../hooks/useToast';
 import { getApiErrorMessage } from '../../utils/apiMessage';
+import { imageService } from '../../services/imageService';
 
 const initialForm = {
   name: '',
@@ -19,6 +20,7 @@ const initialForm = {
 export default function AdminBrands() {
   const toast = useToast();
   const [search, setSearch] = useState('');
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
   const [selectedBrand, setSelectedBrand] = useState(null);
@@ -113,6 +115,21 @@ export default function AdminBrands() {
     }
   };
 
+  const handleLogoUpload = async (file) => {
+    if (!file) return;
+
+    try {
+      setIsUploadingImage(true);
+      const imageData = await imageService.fileToDataUrl(file);
+      setFormData((prev) => ({ ...prev, logoUrl: imageData }));
+      toast.success('تم رفع صورة العلامة التجارية بنجاح.');
+    } catch (error) {
+      toast.error(getApiErrorMessage(error, 'تعذر رفع الصورة.'));
+    } finally {
+      setIsUploadingImage(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-dark-bg">
       <div className="bg-white dark:bg-dark-card border-b border-gray-200 dark:border-gray-700">
@@ -176,11 +193,17 @@ export default function AdminBrands() {
                     <tr key={brand.id} className="border-b border-gray-100 dark:border-gray-800">
                       <td className="py-3 px-2">
                         {brand.logoUrl ? (
-                          <img
-                            src={brand.logoUrl}
-                            alt={brand.name}
-                            className="w-10 h-10 object-cover rounded-lg border border-gray-200 dark:border-gray-700"
-                          />
+                          <div className="relative w-20 h-14 rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700">
+                            <img
+                              src={brand.logoUrl}
+                              alt={brand.name}
+                              className="w-full h-full object-contain bg-gray-100 dark:bg-gray-800 p-1"
+                            />
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
+                            <span className="absolute bottom-1 left-1 right-1 text-center text-[10px] font-bold tracking-wide text-white truncate">
+                              {brand.name}
+                            </span>
+                          </div>
                         ) : (
                           <span className="text-2xl">🏷️</span>
                         )}
@@ -219,9 +242,9 @@ export default function AdminBrands() {
 
       {isModalOpen && (
         <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
-          <div className="w-full max-w-xl rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-dark-card shadow-xl overflow-hidden">
-            <div className="p-5 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
-              <h3 className="text-xl font-bold text-gray-900 dark:text-white">
+          <div className="w-full max-w-lg sm:max-w-xl max-h-[88vh] sm:max-h-[84vh] rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-dark-card shadow-xl overflow-hidden flex flex-col">
+            <div className="px-4 sm:px-5 py-3 sm:py-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between shrink-0">
+              <h3 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white">
                 {isEditMode ? 'تعديل العلامة التجارية' : 'إضافة علامة تجارية جديدة'}
               </h3>
               <button
@@ -234,7 +257,7 @@ export default function AdminBrands() {
               </button>
             </div>
 
-            <div className="p-5 space-y-4">
+            <div className="p-4 sm:p-5 space-y-4 overflow-y-auto">
               <div>
                 <label className="block mb-1 text-sm text-gray-700 dark:text-gray-300">اسم العلامة التجارية</label>
                 <input
@@ -244,17 +267,51 @@ export default function AdminBrands() {
                 />
               </div>
               <div>
-                <label className="block mb-1 text-sm text-gray-700 dark:text-gray-300">رابط الشعار (اختياري)</label>
+                <label className="block mb-2 text-sm text-gray-700 dark:text-gray-300">صورة الماركة</label>
+                <div className="flex items-center gap-3 mb-3">
+                  <label className="inline-flex cursor-pointer items-center gap-2 px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700">
+                    <span>{isUploadingImage ? 'جارٍ الرفع...' : 'رفع صورة'}</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      disabled={isUploadingImage || isSaving}
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        handleLogoUpload(file);
+                        e.target.value = '';
+                      }}
+                    />
+                  </label>
+                </div>
+
+                {formData.logoUrl ? (
+                  <div className="relative w-full max-w-sm overflow-hidden rounded-xl border border-gray-200 dark:border-gray-700">
+                    <img
+                      src={formData.logoUrl}
+                      alt={formData.name || 'Brand preview'}
+                      className="h-44 sm:h-52 w-full object-contain bg-gray-100 dark:bg-gray-800 p-2"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/30 to-transparent" />
+                    <div className="absolute inset-x-3 bottom-3 text-center">
+                      <h4 className="text-white text-xl font-black tracking-wider drop-shadow-lg">
+                        {formData.name || 'اسم الماركة'}
+                      </h4>
+                    </div>
+                  </div>
+                ) : null}
+
+                <label className="block mt-3 mb-1 text-sm text-gray-700 dark:text-gray-300">أو أدخلي رابط الصورة (اختياري)</label>
                 <input
                   value={formData.logoUrl}
                   onChange={(e) => setFormData({ ...formData, logoUrl: e.target.value })}
-                  placeholder="https://example.com/logo.png"
+                  placeholder="https://example.com/brand-image.jpg"
                   className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
                 />
               </div>
             </div>
 
-            <div className="p-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/60 flex justify-end gap-3">
+            <div className="p-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/60 flex justify-end gap-3 shrink-0">
               <button
                 type="button"
                 onClick={() => setIsModalOpen(false)}

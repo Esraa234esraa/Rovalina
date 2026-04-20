@@ -180,6 +180,14 @@ export default function Footer() {
               </li>
               <li>
                 <Link
+                  to="/brands"
+                  className="font-arabic text-sm text-gray-600 dark:text-gray-400 hover:text-primary-600 dark:hover:text-primary-400"
+                >
+                  العلامات التجارية
+                </Link>
+              </li>
+              <li>
+                <Link
                   to="/faq"
                   className="font-arabic text-sm text-gray-600 dark:text-gray-400 hover:text-primary-600 dark:hover:text-primary-400"
                 >

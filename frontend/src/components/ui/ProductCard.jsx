@@ -79,7 +79,7 @@ export default function ProductCard({ product }) {
     <motion.div
       whileHover={{ y: -8 }}
       transition={{ duration: 0.3 }}
-      className="card-hover group cursor-pointer"
+      className="card-hover group cursor-pointer w-full h-full flex flex-col"
       role="button"
       tabIndex={0}
       onClick={() => navigate(`/product/${product.id}`)}
@@ -91,11 +91,11 @@ export default function ProductCard({ product }) {
       }}
     >
       {/* Image container */}
-      <div className="relative h-64 overflow-hidden rounded-t-2xl bg-surface-200 dark:bg-dark-surface">
+      <div className="relative h-64 sm:h-72 overflow-hidden rounded-t-2xl bg-surface-200 dark:bg-dark-surface flex items-center justify-center p-2">
         <img
           src={product.image}
           alt={displayName}
-          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+          className="w-full h-full object-contain"
         />
 
         {/* Discount badge */}
@@ -136,13 +136,11 @@ export default function ProductCard({ product }) {
       </div>
 
       {/* Content */}
-      <div className="p-4">
+      <div className="p-4 flex flex-col flex-1">
         {/* Brand */}
-        {displayBrand && (
-          <p className="text-xs text-ink-500 dark:text-secondary-300 mb-2">
-            {displayBrand}
-          </p>
-        )}
+        <p className="text-xs text-ink-500 dark:text-secondary-300 mb-2 min-h-5">
+          {displayBrand || '\u00A0'}
+        </p>
 
         {/* Product name */}
         <h3 className="font-arabic font-bold text-ink-800 dark:text-secondary-100 mb-2 leading-snug line-clamp-2">
@@ -150,8 +148,8 @@ export default function ProductCard({ product }) {
         </h3>
 
         {/* Rating */}
-        {product.rating && (
-          <div className="flex items-center gap-1 mb-3">
+        {product.rating ? (
+          <div className="flex items-center gap-1 mb-3 min-h-5">
             <div className="flex">
               {[...Array(5)].map((_, i) => (
                 <Star
@@ -168,6 +166,8 @@ export default function ProductCard({ product }) {
               ({product.rating})
             </span>
           </div>
+        ) : (
+          <div className="mb-3 min-h-5" />
         )}
 
         {/* Price section */}
@@ -183,8 +183,8 @@ export default function ProductCard({ product }) {
         </div>
 
         {/* Category/Specs */}
-        {(product.color || product.duration) && (
-          <div className="flex gap-2 mb-4 flex-wrap">
+        {(product.color || product.duration) ? (
+          <div className="flex gap-2 mb-4 flex-wrap min-h-8">
             {displayColor && (
               <span className="text-xs bg-surface-200 dark:bg-dark-surface px-2 py-1 rounded-full text-ink-700 dark:text-secondary-200">
                 {displayColor}
@@ -196,11 +196,13 @@ export default function ProductCard({ product }) {
               </span>
             )}
           </div>
+        ) : (
+          <div className="mb-4 min-h-8" />
         )}
 
         {/* Stock indicator */}
-        {product.stock !== undefined && (
-          <div className="text-xs text-gray-600 dark:text-gray-400">
+        {product.stock !== undefined ? (
+          <div className="text-xs text-gray-600 dark:text-gray-400 mt-auto min-h-4">
             {product.stock > 10 ? (
               <span className="text-green-600 dark:text-green-400">متوفر</span>
             ) : product.stock > 0 ? (
@@ -211,6 +213,8 @@ export default function ProductCard({ product }) {
               <span className="text-red-600 dark:text-red-400">غير متوفر</span>
             )}
           </div>
+        ) : (
+          <div className="mt-auto min-h-4" />
         )}
       </div>
     </motion.div>

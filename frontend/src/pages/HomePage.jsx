@@ -2,6 +2,7 @@
 import AnimatedHero from '../components/home/AnimatedHero';
 import FeaturedProducts from '../components/home/FeaturedProducts';
 import CategoriesSection from '../components/home/CategoriesSection';
+import ShopByBrandSection from '../components/home/ShopByBrandSection';
 import ShopByDuration from '../components/home/ShopByDuration';
 import SpecialOffers from '../components/home/SpecialOffers';
 import TestimonialsSection from '../components/home/TestimonialsSection';
@@ -19,6 +20,9 @@ export default function HomePage() {
 
       {/* Categories */}
       <CategoriesSection />
+
+      {/* Shop by Brand */}
+      <ShopByBrandSection />
 
       {/* Shop by Duration */}
       <ShopByDuration />

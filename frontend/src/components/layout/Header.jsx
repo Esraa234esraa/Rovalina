@@ -197,6 +197,7 @@ export default function Header() {
           <ul className="flex flex-col md:flex-row gap-6 md:gap-8 py-4">
             <li><Link to="/" onClick={handleNavLinkClick} className="font-arabic text-sm hover:text-primary-600 dark:hover:text-primary-400">الرئيسية</Link></li>
             <li><Link to="/shop" onClick={handleNavLinkClick} className="font-arabic text-sm hover:text-primary-600 dark:hover:text-primary-400">تسوقي</Link></li>
+            <li><Link to="/brands" onClick={handleNavLinkClick} className="font-arabic text-sm hover:text-primary-600 dark:hover:text-primary-400">العلامات التجارية</Link></li>
             <li><Link to="/offers" onClick={handleNavLinkClick} className="font-arabic text-sm hover:text-primary-600 dark:hover:text-primary-400">العروض</Link></li>
             <li><Link to="/about" onClick={handleNavLinkClick} className="font-arabic text-sm hover:text-primary-600 dark:hover:text-primary-400">عننا</Link></li>
             <li><Link to="/contact" onClick={handleNavLinkClick} className="font-arabic text-sm hover:text-primary-600 dark:hover:text-primary-400">تواصلي معنا</Link></li>

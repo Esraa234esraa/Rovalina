@@ -12,6 +12,8 @@ const withSuspense = (component) => (
 
 const pageHome = lazy(() => import('../pages/HomePage'));
 const pageShop = lazy(() => import('../pages/ShopPage'));
+const pageBrands = lazy(() => import('../pages/BrandsPage'));
+const pageBrandProducts = lazy(() => import('../pages/BrandProductsPage'));
 const pageCategory = lazy(() => import('../pages/CategoryPage'));
 const pageProductDetails = lazy(() => import('../pages/ProductDetailsPage'));
 const pageOffers = lazy(() => import('../pages/OffersPage'));
@@ -46,6 +48,8 @@ export const router = createBrowserRouter([
     children: [
       { path: '/', element: withSuspense(pageHome) },
       { path: '/shop', element: withSuspense(pageShop) },
+      { path: '/brands', element: withSuspense(pageBrands) },
+      { path: '/brands/:slug', element: withSuspense(pageBrandProducts) },
       { path: '/category/:slug', element: withSuspense(pageCategory) },
       { path: '/product/:id', element: withSuspense(pageProductDetails) },
       { path: '/offers', element: withSuspense(pageOffers) },
