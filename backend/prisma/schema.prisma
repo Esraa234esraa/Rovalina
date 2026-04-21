@@ -395,6 +395,7 @@ model StoreSettings {
   postalCode               String?
   shippingFee              Decimal @default(0)
   freeShippingMinimum      Decimal @default(0)
+  enableFreeShipping       Boolean  @default(true)
   deliveryDays             Int      @default(3)
   shippingRates            Json?
   enableShipping           Boolean  @default(true)

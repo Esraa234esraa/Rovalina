@@ -45,7 +45,7 @@ const resolveShippingFee = (settings, subtotal, governorate, city, fallbackShipp
   if (!settings?.enableShipping) return 0;
 
   const freeShippingMinimum = Number(settings?.freeShippingMinimum || 0);
-  if (subtotal >= freeShippingMinimum) {
+  if (settings?.enableFreeShipping && subtotal >= freeShippingMinimum) {
     return 0;
   }
 

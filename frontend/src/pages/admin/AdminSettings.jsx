@@ -45,6 +45,7 @@ const DEFAULT_SETTINGS = {
   postalCode: '12345',
   shippingFee: 50,
   freeShippingMinimum: 500,
+  enableFreeShipping: true,
   deliveryDays: 3,
   shippingRates: [],
   enableShipping: true,
@@ -378,8 +379,9 @@ export default function AdminSettings() {
       ...settings,
       storeName: String(settings.storeName || '').trim(),
       storeEmail: String(settings.storeEmail || '').trim(),
-      shippingFee: 0,
+      shippingFee: Number(settings.shippingFee || 0),
       freeShippingMinimum: Number(settings.freeShippingMinimum || 0),
+      enableFreeShipping: Boolean(settings.enableFreeShipping),
       deliveryDays: Number.parseInt(String(settings.deliveryDays || 1), 10),
       taxRate: Number(settings.taxRate || 0),
       shippingRates: Array.isArray(settings.shippingRates)
@@ -476,6 +478,15 @@ export default function AdminSettings() {
                 </div>
                 <div className="p-6 space-y-4">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <label className="flex items-center gap-3">
+                      <input
+                        type="checkbox"
+                        checked={Boolean(settings.enableFreeShipping)}
+                        onChange={(e) => handleSettingChange('enableFreeShipping', e.target.checked)}
+                        className="w-4 h-4 text-primary-600 rounded border-gray-300"
+                      />
+                      <span className="text-gray-700 dark:text-gray-300">تفعيل الشحن المجاني</span>
+                    </label>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">حد الشحن المجاني</label>
                       <input
@@ -484,6 +495,7 @@ export default function AdminSettings() {
                         onChange={(e) => handleSettingChange('freeShippingMinimum', e.target.value)}
                         className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
                       />
+                      <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">يُستخدم هذا الحد فقط عند تفعيل الشحن المجاني.</p>
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">أيام التسليم</label>

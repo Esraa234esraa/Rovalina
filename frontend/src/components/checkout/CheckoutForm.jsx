@@ -1,3 +1,5 @@
+import { imageService } from '../../services/imageService';
+
 const paymentLabels = {
   cod: 'الدفع عند الاستلام',
   instapay: 'Instapay',
@@ -151,11 +153,9 @@ export default function CheckoutForm({
               const file = e.target.files?.[0];
               if (!file || !onPaymentProofChange) return;
 
-              const image = await new Promise((resolve, reject) => {
-                const reader = new FileReader();
-                reader.onload = () => resolve(String(reader.result || ''));
-                reader.onerror = reject;
-                reader.readAsDataURL(file);
+              const image = await imageService.fileToCompressedDataUrl(file, {
+                maxDimension: 1600,
+                quality: 0.82,
               });
 
               onPaymentProofChange({
@@ -167,7 +167,7 @@ export default function CheckoutForm({
           {form.paymentProofName ? (
             <p className="text-xs text-gray-600 dark:text-gray-400">تم اختيار: {form.paymentProofName}</p>
           ) : (
-            <p className="text-xs text-gray-500 dark:text-gray-400">هذه الصورة ستظهر للادمن داخل تفاصيل الطلب.</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400">يمكن رفع لقطة شاشة مباشرة، وسيتم ضغطها تلقائيًا قبل الإرسال.</p>
           )}
         </div>
       ) : null}

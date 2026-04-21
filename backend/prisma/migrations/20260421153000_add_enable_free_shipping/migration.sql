@@ -1,0 +1,2 @@
+ALTER TABLE "StoreSettings"
+ADD COLUMN IF NOT EXISTS "enableFreeShipping" BOOLEAN NOT NULL DEFAULT true;

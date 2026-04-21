@@ -39,6 +39,7 @@ const normalizeSettings = (settings) => {
   return {
     ...source,
     enableShipping: Boolean(source.enableShipping ?? true),
+    enableFreeShipping: Boolean(source.enableFreeShipping ?? false),
     enableCOD: Boolean(source.enableCOD ?? true),
     enableInstapay: Boolean(source.enableInstapay ?? instapayNumber),
     enableWallet: Boolean(source.enableWallet ?? walletNumber),

@@ -27,6 +27,7 @@ export const useAdminSettingsQuery = () =>
 
       return {
         ...settings,
+        enableFreeShipping: Boolean(settings.enableFreeShipping ?? false),
         shippingRates,
       };
     },

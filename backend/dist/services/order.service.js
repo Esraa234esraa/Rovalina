@@ -2,6 +2,7 @@ import { prisma } from '../config/prisma.js';
 import { ApiError } from '../utils/ApiError.js';
 import { sendOrderNotification } from './whatsapp.service.js';
 const buildOrderNumber = () => `ORD-${Date.now()}`;
+const LOW_STOCK_THRESHOLD = 5;
 const normalizeText = (value) => String(value || '')
     .trim()
     .toLowerCase();
@@ -35,7 +36,7 @@ const resolveShippingFee = (settings, subtotal, governorate, city, fallbackShipp
     if (!settings?.enableShipping)
         return 0;
     const freeShippingMinimum = Number(settings?.freeShippingMinimum || 0);
-    if (subtotal >= freeShippingMinimum) {
+    if (settings?.enableFreeShipping && subtotal >= freeShippingMinimum) {
         return 0;
     }
     const normalizedGovernorate = normalizeText(governorate);
@@ -66,6 +67,78 @@ const createAdminOrderNotifications = async (tx, { order, title, message, type }
                 status: order.status,
             },
         })),
+    });
+};
+const buildOrderItemsStockMap = (orderItemsData = []) => {
+    const quantitiesMap = new Map();
+    for (const item of orderItemsData) {
+        const productId = String(item?.productId || '').trim();
+        const quantity = Number(item?.quantity || 0);
+        if (!productId || quantity <= 0)
+            continue;
+        const current = quantitiesMap.get(productId);
+        quantitiesMap.set(productId, {
+            productId,
+            quantity: Number((current?.quantity || 0) + quantity),
+            productName: item?.productName || current?.productName || '',
+            productSku: item?.productSku || current?.productSku || null,
+        });
+    }
+    return Array.from(quantitiesMap.values());
+};
+const decrementStockAndNotifyLowStock = async (tx, orderItemsData = []) => {
+    const mappedItems = buildOrderItemsStockMap(orderItemsData);
+    const lowStockProducts = [];
+    for (const item of mappedItems) {
+        const updateResult = await tx.product.updateMany({
+            where: {
+                id: item.productId,
+                stock: {
+                    gte: item.quantity,
+                },
+            },
+            data: {
+                stock: {
+                    decrement: item.quantity,
+                },
+            },
+        });
+        if (!updateResult.count) {
+            throw new ApiError(400, `Insufficient stock for ${item.productName || item.productId}`);
+        }
+        const updatedProduct = await tx.product.findUnique({
+            where: { id: item.productId },
+            select: { id: true, name: true, sku: true, stock: true },
+        });
+        if (!updatedProduct) {
+            throw new ApiError(404, `Product not found: ${item.productId}`);
+        }
+        if (Number(updatedProduct.stock || 0) < LOW_STOCK_THRESHOLD) {
+            lowStockProducts.push(updatedProduct);
+        }
+    }
+    if (!lowStockProducts.length)
+        return;
+    const adminUsers = await tx.user.findMany({
+        where: { role: { in: ['ADMIN', 'SUPER_ADMIN'] } },
+        select: { id: true },
+    });
+    if (!adminUsers.length)
+        return;
+    await tx.notification.createMany({
+        data: adminUsers.flatMap((adminUser) => lowStockProducts.map((product) => ({
+            userId: adminUser.id,
+            type: 'LOW_STOCK',
+            title: 'تنبيه انخفاض المخزون',
+            message: `المنتج ${product.name} اقترب من النفاد. الكمية المتبقية: ${Number(product.stock || 0)}.`,
+            data: {
+                productId: product.id,
+                productName: product.name,
+                productSku: product.sku,
+                stock: Number(product.stock || 0),
+                threshold: LOW_STOCK_THRESHOLD,
+            },
+        }))),
     });
 };
 const calculateTotals = async (subtotal, governorate, city, fallbackShippingFee = 0) => {
@@ -206,16 +279,7 @@ export const orderService = {
                 },
                 include: { items: true },
             });
-            for (const item of orderItemsData) {
-                await tx.product.update({
-                    where: { id: item.productId },
-                    data: {
-                        stock: {
-                            decrement: item.quantity,
-                        },
-                    },
-                });
-            }
+            await decrementStockAndNotifyLowStock(tx, orderItemsData);
             await createAdminOrderNotifications(tx, {
                 order: createdOrder,
                 title: 'طلب جديد',
@@ -301,16 +365,7 @@ export const orderService = {
                 },
                 include: { items: true },
             });
-            for (const item of orderItemsData) {
-                await tx.product.update({
-                    where: { id: item.productId },
-                    data: {
-                        stock: {
-                            decrement: item.quantity,
-                        },
-                    },
-                });
-            }
+            await decrementStockAndNotifyLowStock(tx, orderItemsData);
             await createAdminOrderNotifications(tx, {
                 order: createdOrder,
                 title: 'طلب جديد',

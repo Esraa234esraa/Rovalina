@@ -8,19 +8,29 @@ import {
   useUpdateCartItemMutation,
   useUserCartQuery,
 } from '../hooks/useUserCart';
+import { useStoreSettingsQuery } from '../hooks/useStoreSettings';
 import { useToast } from '../hooks/useToast';
 
 export default function CartPage() {
   const navigate = useNavigate();
   const toast = useToast();
   const { data: cart, isLoading } = useUserCartQuery();
+  const { data: storeSettings } = useStoreSettingsQuery();
   const updateQuantityMutation = useUpdateCartItemMutation();
   const removeItemMutation = useRemoveCartItemMutation();
 
   const items = Array.isArray(cart?.items) ? cart.items : [];
 
   const subtotal = Number(cart?.subtotal || 0);
-  const shipping = subtotal >= 500 ? 0 : 50;
+  const enableShipping = Boolean(storeSettings?.enableShipping ?? true);
+  const enableFreeShipping = Boolean(storeSettings?.enableFreeShipping ?? false);
+  const freeShippingMinimum = Number(storeSettings?.freeShippingMinimum || 0);
+  const shippingFee = Number(storeSettings?.shippingFee || 0);
+  const shipping = !enableShipping
+    ? 0
+    : enableFreeShipping && subtotal >= freeShippingMinimum
+      ? 0
+      : shippingFee;
   const total = subtotal + shipping;
 
   if (isLoading) {

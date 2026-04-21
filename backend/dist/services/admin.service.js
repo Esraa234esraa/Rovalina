@@ -69,6 +69,7 @@ const normalizeInstagramImageUrl = (value) => {
 };
 const SETTINGS_BOOLEAN_KEYS = [
     'enableShipping',
+    'enableFreeShipping',
     'enableCOD',
     'enableInstapay',
     'enableWallet',
@@ -356,8 +357,9 @@ export const adminService = {
         }
         catch (error) {
             // Backward compatibility: if Prisma client/database is not yet migrated for aboutUs, retry without it.
-            if (String(error?.message || '').includes('Unknown argument `aboutUs`')) {
-                const { aboutUs, ...fallbackPayload } = payload;
+            const errorMessage = String(error?.message || '');
+            if (errorMessage.includes('Unknown argument `aboutUs`') || errorMessage.includes('Unknown argument `enableFreeShipping`')) {
+                const { aboutUs, enableFreeShipping, ...fallbackPayload } = payload;
                 return prisma.storeSettings.upsert({
                     where: { id: 'STORE' },
                     update: fallbackPayload,

@@ -65,7 +65,8 @@ export default function CheckoutPage() {
 
   const shipping = useMemo(() => {
     if (!storeSettings?.enableShipping) return 0;
-    if (subtotal >= Number(storeSettings?.freeShippingMinimum || 0)) return 0;
+    const freeShippingMinimum = Number(storeSettings?.freeShippingMinimum || 0);
+    if (storeSettings?.enableFreeShipping && subtotal >= freeShippingMinimum) return 0;
 
     const normalizedGovernorate = String(form.governorate || '').trim().toLowerCase();
     const matchedRate = shippingRates.find(
@@ -425,7 +426,7 @@ export default function CheckoutPage() {
           selectedGovernorateRate={selectedGovernorateRate}
           appliedShippingFee={shipping}
           shippingEnabled={Boolean(storeSettings?.enableShipping)}
-          isFreeShippingApplied={shipping === 0 && subtotal >= Number(storeSettings?.freeShippingMinimum || 0)}
+          isFreeShippingApplied={Boolean(storeSettings?.enableFreeShipping) && shipping === 0 && subtotal >= Number(storeSettings?.freeShippingMinimum || 0)}
           onPaymentProofChange={(fileData) =>
             setForm((current) => ({
               ...current,

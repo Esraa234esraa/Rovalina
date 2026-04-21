@@ -16,6 +16,53 @@ export const imageService = {
     });
   },
 
+  async fileToCompressedDataUrl(file, { maxDimension = 1600, quality = 0.82 } = {}) {
+    if (!file) return '';
+    if (typeof window === 'undefined' || typeof document === 'undefined') {
+      return this.fileToDataUrl(file);
+    }
+
+    if (!String(file.type || '').startsWith('image/')) {
+      return this.fileToDataUrl(file);
+    }
+
+    const objectUrl = URL.createObjectURL(file);
+
+    try {
+      const image = await new Promise((resolve, reject) => {
+        const element = new Image();
+        element.onload = () => resolve(element);
+        element.onerror = () => reject(new Error('فشل في تحميل ملف الصورة'));
+        element.src = objectUrl;
+      });
+
+      const width = image.naturalWidth || image.width || 0;
+      const height = image.naturalHeight || image.height || 0;
+
+      if (!width || !height) {
+        return this.fileToDataUrl(file);
+      }
+
+      const scale = Math.min(1, maxDimension / Math.max(width, height));
+      const targetWidth = Math.max(1, Math.round(width * scale));
+      const targetHeight = Math.max(1, Math.round(height * scale));
+
+      const canvas = document.createElement('canvas');
+      canvas.width = targetWidth;
+      canvas.height = targetHeight;
+
+      const context = canvas.getContext('2d');
+      if (!context) {
+        return this.fileToDataUrl(file);
+      }
+
+      context.drawImage(image, 0, 0, targetWidth, targetHeight);
+      return canvas.toDataURL('image/jpeg', quality);
+    } finally {
+      URL.revokeObjectURL(objectUrl);
+    }
+  },
+
   extractPrimaryImageFromColors(colors = []) {
     const firstColorWithImage = colors.find((color) => Array.isArray(color.images) && color.images.length > 0);
     return firstColorWithImage?.images?.[0] || '';
