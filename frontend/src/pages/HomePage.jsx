@@ -1,9 +1,9 @@
 ﻿import React from 'react';
 import AnimatedHero from '../components/home/AnimatedHero';
 import FeaturedProducts from '../components/home/FeaturedProducts';
-import CategoriesSection from '../components/home/CategoriesSection';
+// import CategoriesSection from '../components/home/CategoriesSection';
 import ShopByBrandSection from '../components/home/ShopByBrandSection';
-import ShopByDuration from '../components/home/ShopByDuration';
+// import ShopByDuration from '../components/home/ShopByDuration';
 import SpecialOffers from '../components/home/SpecialOffers';
 import TestimonialsSection from '../components/home/TestimonialsSection';
 import InstagramSection from '../components/home/InstagramSection';
@@ -19,13 +19,13 @@ export default function HomePage() {
       <FeaturedProducts />
 
       {/* Categories */}
-      <CategoriesSection />
+      {/* <CategoriesSection /> */}
 
       {/* Shop by Brand */}
       <ShopByBrandSection />
 
       {/* Shop by Duration */}
-      <ShopByDuration />
+      {/* <ShopByDuration /> */}
 
       {/* Special Offers */}
       <SpecialOffers />
