@@ -22,15 +22,18 @@ export default function CartPage() {
   const items = Array.isArray(cart?.items) ? cart.items : [];
 
   const subtotal = Number(cart?.subtotal || 0);
-  const enableShipping = Boolean(storeSettings?.enableShipping ?? true);
-  const enableFreeShipping = Boolean(storeSettings?.enableFreeShipping ?? false);
+  const enableShipping = Boolean(storeSettings?.enableShipping);
+  const enableFreeShipping = Boolean(storeSettings?.enableFreeShipping);
   const freeShippingMinimum = Number(storeSettings?.freeShippingMinimum || 0);
   const shippingFee = Number(storeSettings?.shippingFee || 0);
-  const shipping = !enableShipping
-    ? 0
-    : enableFreeShipping && subtotal >= freeShippingMinimum
-      ? 0
-      : shippingFee;
+  let shipping = 0;
+  if (enableShipping) {
+    if (enableFreeShipping && subtotal >= freeShippingMinimum) {
+      shipping = 0;
+    } else {
+      shipping = shippingFee;
+    }
+  }
   const total = subtotal + shipping;
 
   if (isLoading) {
@@ -85,6 +88,7 @@ export default function CartPage() {
           subtotal={subtotal}
           shipping={shipping}
           total={total}
+          enableFreeShipping={enableFreeShipping}
           onCheckout={() => navigate('/checkout')}
         />
       </div>

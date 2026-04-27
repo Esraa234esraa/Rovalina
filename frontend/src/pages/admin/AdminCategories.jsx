@@ -5,7 +5,9 @@ import {
   useAdminCreateCategoryMutation,
   useAdminUpdateCategoryMutation,
   useAdminDeleteCategoryMutation,
+  catalogCategoriesKeys,
 } from '../../hooks/admin/useAdminCategories';
+import { useQueryClient } from '@tanstack/react-query';
 import ConfirmDeleteModal from '../../components/admin/ConfirmDeleteModal';
 import LoadingState from '../../components/ui/LoadingState';
 import { useToast } from '../../hooks/useToast';
@@ -19,6 +21,7 @@ const initialForm = {
 
 export default function AdminCategories() {
   const toast = useToast();
+  const queryClient = useQueryClient();
   const [search, setSearch] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
@@ -97,6 +100,8 @@ export default function AdminCategories() {
         await updateCategoryMutation.mutateAsync({ id: selectedCategory.id, payload });
         toast.success('تم تحديث التصنيف بنجاح.');
         setIsModalOpen(false);
+        // إعادة جلب بيانات الفئات
+        queryClient.invalidateQueries({ queryKey: ['catalog-categories'] });
         return;
       }
 
@@ -104,6 +109,8 @@ export default function AdminCategories() {
       toast.success('تم إنشاء التصنيف بنجاح.');
       setIsModalOpen(false);
       setFormData(initialForm);
+      // إعادة جلب بيانات الفئات
+      queryClient.invalidateQueries({ queryKey: ['catalog-categories'] });
     } catch (error) {
       toast.error(getApiErrorMessage(error, 'تعذر حفظ التصنيف.'));
     }
