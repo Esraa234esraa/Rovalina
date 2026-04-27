@@ -5,7 +5,6 @@ import {
   useAdminCreateCategoryMutation,
   useAdminUpdateCategoryMutation,
   useAdminDeleteCategoryMutation,
-  catalogCategoriesKeys,
 } from '../../hooks/admin/useAdminCategories';
 import { useQueryClient } from '@tanstack/react-query';
 import ConfirmDeleteModal from '../../components/admin/ConfirmDeleteModal';
