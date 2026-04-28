@@ -11,11 +11,11 @@ export default function CartItemCard({ item, onDecrease, onIncrease, onRemove })
       <div className="flex flex-row sm:flex-col items-center gap-2 w-full sm:w-auto justify-center">
         <div className="flex items-center gap-2 justify-center w-full sm:w-auto">
           <button className="p-2 rounded bg-surface-200" onClick={onDecrease}>
-            <Minus className="w-4 h-4" />
+            <Minus className="w-4 h-4 text-brown-800 dark:text-[#6B4A45]" />
           </button>
           <span className="w-8 text-center">{item.quantity}</span>
           <button className="p-2 rounded bg-surface-200" onClick={onIncrease}>
-            <Plus className="w-4 h-4" />
+            <Plus className="w-4 h-4 text-brown-800 dark:text-[#6B4A45]" />
           </button>
         </div>
         <button className="p-2 rounded bg-red-100 text-red-700 mt-2 sm:mt-0" onClick={onRemove}>
