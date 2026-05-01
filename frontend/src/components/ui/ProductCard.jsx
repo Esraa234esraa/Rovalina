@@ -107,7 +107,9 @@ export default function ProductCard({ product }) {
 
         {/* Wishlist button */}
         <button
+          type="button"
           onClick={(e) => {
+            e.preventDefault();
             e.stopPropagation();
             handleWishlistToggle();
           }}
@@ -120,19 +122,20 @@ export default function ProductCard({ product }) {
           />
         </button>
 
-        {/* Quick add to cart on hover */}
-        <motion.button
-          initial={{ opacity: 0, y: 10 }}
-          whileHover={{ opacity: 1, y: 0 }}
-          className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4 flex items-center justify-center gap-2 text-white font-arabic"
-          onClick={(e) => {
-            e.stopPropagation();
-            handleAddToCart();
-          }}
+        {/* Quick add to cart on hover (desktop) and small icon (mobile) */}
+        <button
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              handleAddToCart();
+            }}
+          className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4 flex items-center justify-center gap-2 text-white font-arabic opacity-0 translate-y-2 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-200 ease-out hidden sm:flex"
         >
           <ShoppingCart className="w-5 h-5" />
           أضيفي للسلة
-        </motion.button>
+        </button>
+
+        {/* Mobile cart icon moved to card footer (see below) */}
       </div>
 
       {/* Content */}
@@ -183,7 +186,7 @@ export default function ProductCard({ product }) {
         </div>
 
         {/* Category/Specs */}
-        {(product.color || product.duration) ? (
+        {/* {(product.color || product.duration) ? (
           <div className="flex gap-2 mb-4 flex-wrap min-h-8">
             {displayColor && (
               <span className="text-xs bg-surface-200 dark:bg-dark-surface px-2 py-1 rounded-full text-ink-700 dark:text-secondary-200">
@@ -198,10 +201,10 @@ export default function ProductCard({ product }) {
           </div>
         ) : (
           <div className="mb-4 min-h-8" />
-        )}
+        )} */}
 
-        {/* Stock indicator */}
-        {product.stock !== undefined ? (
+        {/* Stock indicator (kept commented) */}
+        {/* {product.stock !== undefined ? (
           <div className="text-xs text-gray-600 dark:text-gray-400 mt-auto min-h-4">
             {product.stock > 10 ? (
               <span className="text-green-600 dark:text-green-400">متوفر</span>
@@ -215,7 +218,25 @@ export default function ProductCard({ product }) {
           </div>
         ) : (
           <div className="mt-auto min-h-4" />
-        )}
+        )} */}
+
+        {/* Mobile: small cart icon at card footer (bottom-left) */}
+        <div className="sm:hidden mt-3">
+          <div className="flex items-center">
+            <button
+              type="button"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                handleAddToCart();
+              }}
+              aria-label="أضف للسلة"
+              className="p-2 bg-background-100/90 dark:bg-dark-surface/80 backdrop-blur-sm rounded-full hover:bg-surface-100 dark:hover:bg-dark-surface transition"
+            >
+              <ShoppingCart className="w-5 h-5 text-ink-600 dark:text-secondary-300" />
+            </button>
+          </div>
+        </div>
       </div>
     </motion.div>
   );

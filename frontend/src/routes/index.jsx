@@ -3,6 +3,7 @@ import { Navigate, createBrowserRouter } from 'react-router-dom';
 import AppLayout from '../components/layout/AppLayout';
 import AdminLayout from '../components/layout/AdminLayout';
 import LoadingState from '../components/ui/LoadingState';
+import RouteError from '../components/ui/RouteError';
 
 const withSuspense = (component) => (
   <Suspense fallback={<LoadingState text="جاري تحميل الصفحة..." className="py-24" />}>
@@ -45,6 +46,7 @@ export const router = createBrowserRouter([
   {
     path: '/',
     element: <AppLayout />,
+    errorElement: <RouteError />,
     children: [
       { path: '/', element: withSuspense(pageHome) },
       { path: '/shop', element: withSuspense(pageShop) },

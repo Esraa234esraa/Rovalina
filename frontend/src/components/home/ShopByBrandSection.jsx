@@ -1,7 +1,6 @@
-import { useMemo, useRef } from 'react';
+import { useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { motion as Motion } from 'framer-motion';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useCatalogBrandsQuery } from '../../hooks/useCatalogBrands';
 
 const BRAND_FALLBACK =
@@ -9,22 +8,7 @@ const BRAND_FALLBACK =
 
 export default function ShopByBrandSection() {
   const { data: brands = [] } = useCatalogBrandsQuery();
-  const sliderRef = useRef(null);
-
   const displayBrands = useMemo(() => (Array.isArray(brands) ? brands.filter((brand) => brand?.name) : []), [brands]);
-
-  const scrollByOneCard = (direction) => {
-    const slider = sliderRef.current;
-    if (!slider) return;
-
-    const firstCard = slider.querySelector('[data-brand-card="true"]');
-    const cardWidth = firstCard?.clientWidth || slider.clientWidth * 0.5;
-
-    slider.scrollBy({
-      left: direction * cardWidth,
-      behavior: 'smooth',
-    });
-  };
 
   if (displayBrands.length === 0) return null;
 
@@ -48,22 +32,6 @@ export default function ShopByBrandSection() {
           </div>
 
           <div className="flex items-center gap-3">
-            <button
-              type="button"
-              onClick={() => scrollByOneCard(-1)}
-              className="hidden md:inline-flex h-10 w-10 items-center justify-center rounded-full border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800"
-              aria-label="السابق"
-            >
-              <ChevronRight className="h-5 w-5" />
-            </button>
-            <button
-              type="button"
-              onClick={() => scrollByOneCard(1)}
-              className="hidden md:inline-flex h-10 w-10 items-center justify-center rounded-full border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800"
-              aria-label="التالي"
-            >
-              <ChevronLeft className="h-5 w-5" />
-            </button>
             <Link
               to="/brands"
               className="inline-flex items-center rounded-lg bg-primary-600 hover:bg-primary-700 text-white px-4 py-2 font-medium"
@@ -73,22 +41,14 @@ export default function ShopByBrandSection() {
           </div>
         </Motion.div>
 
-        <div
-          ref={sliderRef}
-          className="hide-scrollbar flex overflow-x-auto gap-4 md:gap-6 snap-x snap-mandatory pb-2"
-        >
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 md:gap-6 mb-6">
           {displayBrands.map((brand) => (
-            <Link
-              key={brand.id}
-              to={`/brands/${brand.slug}`}
-              data-brand-card="true"
-              className="group relative snap-start shrink-0 basis-[calc(50%-0.5rem)] md:basis-[calc(33.333%-1rem)]"
-            >
+            <Link key={brand.id} to={`/brands/${brand.slug}`} className="group relative">
               <article className="relative overflow-hidden rounded-2xl border border-surface-300 dark:border-primary-900/40 bg-surface-50 dark:bg-dark-surface">
                 <img
                   src={brand.logoUrl || BRAND_FALLBACK}
                   alt={brand.name}
-                  className="h-[260px] md:h-[320px] w-full object-contain bg-surface-200 dark:bg-dark-card p-2 transition-transform duration-300 group-hover:scale-105"
+                  className="h-48 md:h-56 lg:h-64 w-full object-contain bg-surface-200 dark:bg-dark-card p-2 transition-transform duration-300 group-hover:scale-105"
                   loading="lazy"
                 />
                 <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent" />

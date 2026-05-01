@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import ProductCard from '../components/ui/ProductCard';
 import LoadingState from '../components/ui/LoadingState';
@@ -9,6 +9,7 @@ const BRAND_FALLBACK =
   'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=700&q=80';
 
 export default function BrandProductsPage() {
+  const [showBrands, setShowBrands] = useState(false);
   const { slug } = useParams();
   const navigate = useNavigate();
 
@@ -58,75 +59,104 @@ export default function BrandProductsPage() {
         </div>
       </div>
 
-      <div className="container-fluid py-8 space-y-8">
-        <section className="overflow-x-auto hide-scrollbar">
-          <div className="flex gap-3 min-w-max pb-2">
-            {brands.map((brand) => {
-              const isActive = brand.id === selectedBrand?.id;
-              return (
-                <button
-                  key={brand.id}
-                  type="button"
-                  onClick={() => navigate(`/brands/${brand.slug}`)}
-                  className={`flex items-center gap-3 rounded-xl border px-3 py-2 transition ${
-                    isActive
-                      ? 'border-primary-600 bg-primary-50 dark:bg-primary-900/30 dark:border-primary-500'
-                      : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-dark-card hover:border-primary-300 dark:hover:border-primary-700'
-                  }`}
-                >
-                  <img
-                    src={brand.logoUrl || BRAND_FALLBACK}
-                    alt={brand.name}
-                    className="h-10 w-10 rounded-lg object-contain bg-surface-200 dark:bg-dark-card p-1"
-                    loading="lazy"
-                  />
-                  <span className="font-medium text-gray-900 dark:text-white whitespace-nowrap">{brand.name}</span>
-                </button>
-              );
-            })}
-          </div>
-        </section>
+      <div className="container-fluid py-8">
+        {/* Mobile: toggle button to show/hide brands list */}
+        <div className="md:hidden mb-4 flex items-center justify-between">
+          <button
+            type="button"
+            onClick={() => setShowBrands((s) => !s)}
+            aria-expanded={showBrands}
+            className="inline-flex items-center px-4 py-2 rounded-lg bg-primary-600 text-white font-medium"
+          >
+            {showBrands ? 'إخفاء الماركات' : 'اختر ماركة'}
+          </button>
+        </div>
 
-        {selectedBrand ? (
-          <section className="relative overflow-hidden rounded-2xl border border-surface-300 dark:border-primary-900/40 bg-surface-50 dark:bg-dark-surface">
-            <img
-              src={selectedBrand.logoUrl || BRAND_FALLBACK}
-              alt={selectedBrand.name}
-              className="h-[260px] md:h-[320px] w-full object-contain bg-surface-200 dark:bg-dark-card p-2"
-            />
-            <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/75 via-black/30 to-transparent" />
-            <div className="absolute inset-x-4 bottom-6 text-center">
-              <h2 className="text-white text-3xl md:text-4xl font-black tracking-wider drop-shadow-lg">{selectedBrand.name}</h2>
+        <div className="md:grid md:grid-cols-5 md:gap-8">
+          {/* Left: brands list (names only) */}
+          <aside className="md:col-span-1 mb-6 md:mb-0">
+            <div className="sticky top-24">
+              {/* Desktop: always-visible vertical list */}
+              <div className="hidden md:block space-y-2">
+                {brands.map((brand) => {
+                  const isActive = brand.id === selectedBrand?.id;
+                  return (
+                    <button
+                      key={brand.id}
+                      type="button"
+                      onClick={() => navigate(`/brands/${brand.slug}`)}
+                      className={`w-full text-start px-3 py-3 rounded-lg transition-block ${
+                        isActive
+                          ? 'bg-primary-50 dark:bg-primary-900/30 text-primary-700 font-bold'
+                          : 'bg-transparent text-gray-800 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-dark-card'
+                      }`}
+                      style={{ fontSize: '1.05rem' }}
+                    >
+                      {brand.name}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Mobile: collapsible list shown when toggled */}
+              {showBrands ? (
+                <div className="block md:hidden space-y-2">
+                  {brands.map((brand) => {
+                    const isActive = brand.id === selectedBrand?.id;
+                    return (
+                      <button
+                        key={brand.id}
+                        type="button"
+                        onClick={() => {
+                          setShowBrands(false);
+                          navigate(`/brands/${brand.slug}`);
+                        }}
+                        className={`w-full text-start px-3 py-3 rounded-lg transition-block ${
+                          isActive
+                            ? 'bg-primary-50 dark:bg-primary-900/30 text-primary-700 font-bold'
+                            : 'bg-transparent text-gray-800 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-dark-card'
+                        }`}
+                        style={{ fontSize: '1.05rem' }}
+                      >
+                        {brand.name}
+                      </button>
+                    );
+                  })}
+                </div>
+              ) : null}
             </div>
-          </section>
-        ) : null}
+          </aside>
 
-        {isLoading ? <LoadingState text="جاري تحميل المنتجات..." className="py-10" /> : null}
+          {/* Right: products (show immediately) */}
+          <main className="md:col-span-4">
+            {isLoading ? <LoadingState text="جاري تحميل المنتجات..." className="py-10" /> : null}
 
-        {hasError ? (
-          <div className="mb-6 p-4 rounded-lg border border-red-200 bg-red-50 text-red-700 dark:border-red-900/40 dark:bg-red-900/20 dark:text-red-300">
-            تعذر تحميل البيانات حالياً، حاولي مرة أخرى بعد قليل.
-          </div>
-        ) : null}
-
-        {!isLoading && !hasError ? (
-          <section>
-            <div className="mb-6 text-sm text-gray-600 dark:text-gray-400">تم العثور على {products.length} منتج</div>
-
-            {products.length > 0 ? (
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
-                {products.map((product) => (
-                  <ProductCard key={product.id} product={product} />
-                ))}
+            {hasError ? (
+              <div className="mb-6 p-4 rounded-lg border border-red-200 bg-red-50 text-red-700 dark:border-red-900/40 dark:bg-red-900/20 dark:text-red-300">
+                تعذر تحميل البيانات حالياً، حاولي مرة أخرى بعد قليل.
               </div>
-            ) : (
-              <div className="text-center py-14 bg-white dark:bg-dark-card rounded-xl border border-gray-200 dark:border-gray-700">
-                <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">لا توجد منتجات لهذه العلامة حالياً</h3>
-                <p className="text-gray-600 dark:text-gray-400">اختاري ماركة أخرى من الأعلى.</p>
-              </div>
-            )}
-          </section>
-        ) : null}
+            ) : null}
+
+            {!isLoading && !hasError ? (
+              <section>
+                <div className="mb-6 text-sm text-gray-600 dark:text-gray-400">تم العثور على {products.length} منتج</div>
+
+                {products.length > 0 ? (
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
+                    {products.map((product) => (
+                      <ProductCard key={product.id} product={product} />
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-14 bg-white dark:bg-dark-card rounded-xl border border-gray-200 dark:border-gray-700">
+                    <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">لا توجد منتجات لهذه العلامة حالياً</h3>
+                    <p className="text-gray-600 dark:text-gray-400">اختاري ماركة أخرى من القائمة.</p>
+                  </div>
+                )}
+              </section>
+            ) : null}
+          </main>
+        </div>
       </div>
     </div>
   );
